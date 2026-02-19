@@ -1,43 +1,77 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
+# --------------------------------------------------
+# General
+# --------------------------------------------------
 .DS_Store
 *.pem
-
-# debug
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# local env files
-.env*.local
-.env
-.venv
+# --------------------------------------------------
+# Node / React / Next.js
+# --------------------------------------------------
+node_modules/
+.pnp
+.pnp.js
 
-# vercel
+.next/
+out/
+build/
+dist/
+
+coverage/
+
 .vercel
 
-# typescript
+# TypeScript
 *.tsbuildinfo
 next-env.d.ts
 
-/backend/serviceAccountKey.json
-/backend/venv
-/backend/.env
+# --------------------------------------------------
+# Environment Files
+# --------------------------------------------------
+.env
+.env.*
+.env*.local
+
+# --------------------------------------------------
+# Python / FastAPI / Uvicorn
+# --------------------------------------------------
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+backend/venv/
+
+# Python build / cache
+.pytest_cache/
+.mypy_cache/
+.cache/
+
+# Uvicorn / runtime
+*.pid
+*.sock
+
+# SQLite (if used)
+*.sqlite3
+
+# --------------------------------------------------
+# Backend Sensitive Files
+# --------------------------------------------------
+backend/serviceAccountKey.json
+backend/.env
+
+# --------------------------------------------------
+# OS / IDE
+# --------------------------------------------------
+.vscode/
+.idea/
