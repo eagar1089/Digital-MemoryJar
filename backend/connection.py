@@ -18,13 +18,13 @@ def get_client() -> MongoClient:
     return _client
 
 
-def get_db(db_name: str = "mydatabase"):
+def get_db(db_name: str = "dmj"):
     """Return a database handle."""
     client = get_client()
     return client[db_name]
 
 
-def get_collection(name: str, db_name: str = "mydatabase"):
+def get_collection(name: str, db_name: str = "dmj"):
     db = get_db(db_name)
     return db[name]
 
@@ -34,7 +34,6 @@ if __name__ == "__main__":
     try:
         col = get_collection("customers")
         print("Connected to collection:", col.name)
-        # only run a lightweight check
         print("Documents count:", col.count_documents({}))
     except Exception as e:
         print("Connection test failed:", e)

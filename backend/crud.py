@@ -6,27 +6,49 @@ from backend.connection import get_collection
 
 
 def create_memory(data: dict) -> str:
-    """Create a new memory with all raw data and metadata."""
+    """Create a new memory with all raw data and NLP insights.
+    
+    Expected fields:
+    - content: Raw text input (required)
+    - content_clean: Cleaned version (optional, can be generated later)
+    - mood: Detected mood (optional)
+    - ai_summary: AI summary (optional)
+    - tags: Associated tags (optional)
+    - nlp_insights: NLP extraction results with emotion_scores, keywords, topics (optional)
+    - embedding_id: FAISS vector index reference (optional, set during embedding phase)
+    - uid: Firebase user ID (added by router)
+    """
     col = get_collection("memories")
     
     # Add timestamps and metadata
     now = datetime.utcnow()
     data["created_at"] = now
     data["updated_at"] = now
-    data["is_processed"] = False  # Mark as raw data, not yet extracted
+    # Only mark as processed if embedding_id and nlp_insights are present
+    data["is_processed"] = "embedding_id" in data and "nlp_insights" in data
     
     res = col.insert_one(data)
     return str(res.inserted_id)
 
 
-def list_memories(limit: int = 50) -> List[dict]:
-    """List memories in reverse chronological order."""
+def list_memories(limit: int = 50, processed_only: bool = False) -> List[dict]:
+    """List memories in reverse chronological order.
+    
+    Args:
+        limit: Max number of memories to return
+        processed_only: If True, only return memories with is_processed=True
+    """
     col = get_collection("memories")
-    docs = col.find().sort("created_at", -1).limit(limit)
+    
+    query = {}
+    if processed_only:
+        query = {"is_processed": True}
+    
+    docs = col.find(query).sort("created_at", -1).limit(limit)
     result = []
     for d in docs:
-        d["id"] = str(d["_id"])  # Convert ObjectId to string
-        # Serialize datetime objects
+        d["id"] = str(d["_id"])
+        # Serialize datetime objects to ISO format
         if "created_at" in d and isinstance(d["created_at"], datetime):
             d["created_at"] = d["created_at"].isoformat()
         if "updated_at" in d and isinstance(d["updated_at"], datetime):
@@ -51,18 +73,31 @@ def get_memory_by_id(memory_id: str) -> Optional[dict]:
         return None
 
 
+def update_memory_with_nlp(memory_id: str, nlp_data: dict) -> bool:
+    """Update a memory with NLP extraction results.
+    
+    Args:
+        memory_id: MongoDB ObjectId as string
+        nlp_data: Dict with content_clean, nlp_insights, embedding_id, etc.
+    """
+    col = get_collection("memories")
+    try:
+        nlp_data["updated_at"] = datetime.utcnow()
+        nlp_data["is_processed"] = True
+        
+        result = col.update_one(
+            {"_id": ObjectId(memory_id)},
+            {"$set": nlp_data}
+        )
+        return result.modified_count > 0
+    except Exception:
+        return False
+
+
 def get_stats() -> dict:
-    """Get aggregated stats from memories."""
+    """Get aggregated stats from memories including emotion analysis."""
     col = get_collection("memories")
     total = col.count_documents({})
-    
-    # Placeholder avg calculation if `mood_score` is provided on docs
-    pipeline = [
-        {"$match": {"mood_score": {"$exists": True}}},
-        {"$group": {"_id": None, "avg": {"$avg": "$mood_score"}}},
-    ]
-    agg = list(col.aggregate(pipeline))
-    avg = agg[0]["avg"] if agg else None
     
     # Get most common mood
     mood_pipeline = [
@@ -74,8 +109,44 @@ def get_stats() -> dict:
     mood_agg = list(col.aggregate(mood_pipeline))
     most_common_mood = mood_agg[0]["_id"] if mood_agg else None
     
+    # Get top emotions across all memories
+    emotion_pipeline = [
+        {"$match": {"nlp_insights.emotion_scores": {"$exists": True}}},
+        {"$group": {
+            "_id": None,
+            "joy_avg": {"$avg": "$nlp_insights.emotion_scores.joy"},
+            "gratitude_avg": {"$avg": "$nlp_insights.emotion_scores.gratitude"},
+            "sadness_avg": {"$avg": "$nlp_insights.emotion_scores.sadness"},
+            "anger_avg": {"$avg": "$nlp_insights.emotion_scores.anger"},
+            "neutral_avg": {"$avg": "$nlp_insights.emotion_scores.neutral"},
+        }},
+    ]
+    emotion_agg = list(col.aggregate(emotion_pipeline))
+    top_emotions = {}
+    if emotion_agg:
+        e = emotion_agg[0]
+        top_emotions = {
+            "joy": round(e.get("joy_avg", 0), 3),
+            "gratitude": round(e.get("gratitude_avg", 0), 3),
+            "sadness": round(e.get("sadness_avg", 0), 3),
+            "anger": round(e.get("anger_avg", 0), 3),
+            "neutral": round(e.get("neutral_avg", 0), 3),
+        }
+    
+    # Get top topics
+    topic_pipeline = [
+        {"$match": {"nlp_insights.topics": {"$exists": True}}},
+        {"$unwind": "$nlp_insights.topics"},
+        {"$group": {"_id": "$nlp_insights.topics", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 5},
+    ]
+    topic_agg = list(col.aggregate(topic_pipeline))
+    top_topics = [t["_id"] for t in topic_agg]
+    
     return {
         "total_memories": total,
-        "avg_mood_score": avg,
         "most_common_mood": most_common_mood,
+        "top_emotions": top_emotions if top_emotions else None,
+        "top_topics": top_topics if top_topics else None,
     }
