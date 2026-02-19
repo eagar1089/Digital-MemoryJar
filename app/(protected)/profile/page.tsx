@@ -9,8 +9,8 @@ export default function ProfilePage() {
   const [theme, setTheme] = useState<"light" | "dark" | "auto">("auto")
 
   const user = {
-    name: "Sarah Anderson",
-    email: "sarah@example.com",
+    name: "Sagar Parab",
+    email: "sgrp9801@gmail.com",
     joinDate: "January 2024",
     avatar: "SA",
     stats: {

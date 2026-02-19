@@ -4,7 +4,6 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "@/lib/theme-provider"
 import { FloatingNav } from "@/components/floating-nav"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { ClientAuthProvider } from "@/components/auth-provider"
 import "./globals.css"
 
@@ -27,7 +26,6 @@ export default function RootLayout({
       <body className={`font-sans antialiased`}>
         <ClientAuthProvider>
           <ThemeProvider>
-            <ThemeToggle />
             {children}
             <FloatingNav />
           </ThemeProvider>

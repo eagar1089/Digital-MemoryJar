@@ -24,7 +24,7 @@ export function ThemeToggle() {
     <Tooltip content={`Switch to ${getNextTheme()} mode`}>
       <button
         onClick={() => setTheme(getNextTheme())}
-        className="fixed top-4 right-4 z-40 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all duration-300 hover:scale-110 animate-blink"
+        className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all duration-300 hover:scale-110"
       >
         <ThemeIcon size={16} />
       </button>

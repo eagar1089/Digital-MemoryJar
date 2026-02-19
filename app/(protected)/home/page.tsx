@@ -1,8 +1,10 @@
 "use client"
 import { useState } from "react"
 import Link from "next/link"
+import  CalendarCard  from "@/components/ui/calenderCard"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+
 import { Plus, Sparkles, TrendingUp } from "lucide-react"
 
 export default function HomePage() {
@@ -29,6 +31,7 @@ export default function HomePage() {
           <h1 className="text-3xl md:text-5xl font-bold text-balance">Good Evening, {userName}</h1>
           <p className="text-muted-foreground md:text-lg">Let's capture your thoughts today</p>
         </div>
+        <CalendarCard />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           {/* Today's mood snapshot */}

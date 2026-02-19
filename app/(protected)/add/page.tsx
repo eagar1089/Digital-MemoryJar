@@ -1,24 +1,32 @@
 "use client"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Sparkles, Mic, X } from "lucide-react"
+import { ArrowLeft, Sparkles, Mic, X, AlertCircle } from "lucide-react"
+import { apiPost, apiPostNoAuth } from "@/lib/api-client"
 
 export default function AddMemoryPage() {
+  const router = useRouter()
   const [memory, setMemory] = useState("")
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analyzed, setAnalyzed] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [aiSummary, setAiSummary] = useState("")
   const [detectedMood, setDetectedMood] = useState("")
+  const [error, setError] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
 
   const handleAnalyze = async () => {
     if (!memory.trim()) return
 
     setIsAnalyzing(true)
-    // Simulate AI analysis
+    setError("")
+    
+    // Simulate AI analysis (in real app, this would call your AI service)
     setTimeout(() => {
       setAiSummary(
         "You reflected on your day and expressed feelings of accomplishment mixed with anticipation for upcoming challenges.",
@@ -29,13 +37,70 @@ export default function AddMemoryPage() {
     }, 1500)
   }
 
-  const handleSave = () => {
-    console.log("Saving memory:", { memory, mood: detectedMood })
-    // Reset form
-    setMemory("")
-    setAnalyzed(false)
-    setAiSummary("")
-    setDetectedMood("")
+  const handleSave = async () => {
+    setIsSaving(true)
+    setError("")
+    setSuccessMessage("")
+
+    try {
+      // Call backend API to save memory and process it
+      const response = await apiPost("/memories/", {
+        content: memory,
+        mood: detectedMood || undefined,
+        ai_summary: aiSummary || undefined,
+        tags: ["personal", "reflection", "growth"],
+        recorded_by: "text",
+      })
+
+      setSuccessMessage("Memory saved! It's being processed by the AI pipeline...")
+      
+      // Reset form
+      setTimeout(() => {
+        setMemory("")
+        setAnalyzed(false)
+        setAiSummary("")
+        setDetectedMood("")
+        setSuccessMessage("")
+        // Redirect to dashboard to see the new memory
+        router.push("/dashboard")
+      }, 1500)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to save memory"
+
+      // If auth failed (401) or user not authenticated, try dev endpoint (local only)
+      if (typeof errorMessage === "string" && (errorMessage.includes("401") || errorMessage.includes("No Firebase token"))) {
+        try {
+          await apiPostNoAuth("/memories/dev", {
+            content: memory,
+            mood: detectedMood || undefined,
+            ai_summary: aiSummary || undefined,
+            tags: ["personal", "reflection", "growth"],
+            recorded_by: "text",
+          })
+          setSuccessMessage("Memory saved via dev endpoint! It's being processed by the AI pipeline...")
+          setTimeout(() => {
+            setMemory("")
+            setAnalyzed(false)
+            setAiSummary("")
+            setDetectedMood("")
+            setSuccessMessage("")
+            // router.push("/dashboard")
+          }, 1500)
+          return
+        } catch (devErr) {
+          const devMsg = devErr instanceof Error ? devErr.message : "Dev save failed"
+          setError(devMsg)
+          console.error("Dev save error:", devErr)
+          setIsSaving(false)
+          return
+        }
+      }
+
+      setError(errorMessage)
+      console.error("Save error:", err)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleDiscard = () => {
@@ -43,6 +108,7 @@ export default function AddMemoryPage() {
     setAnalyzed(false)
     setAiSummary("")
     setDetectedMood("")
+    setError("")
   }
 
   const moodEmojis: Record<string, string> = {
@@ -73,6 +139,21 @@ export default function AddMemoryPage() {
           <h1 className="text-2xl font-bold">Add Memory</h1>
           <div className="w-6"></div>
         </div>
+
+        {/* Error message */}
+        {error && (
+          <Card className="bg-destructive/10 border-destructive/30 p-4 flex gap-3">
+            <AlertCircle size={16} className="text-destructive flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-destructive">{error}</p>
+          </Card>
+        )}
+
+        {/* Success message */}
+        {successMessage && (
+          <Card className="bg-green-500/10 border-green-500/30 p-4">
+            <p className="text-sm text-green-700 dark:text-green-400">{successMessage}</p>
+          </Card>
+        )}
 
         {/* Memory input */}
         <Card className="glass-gradient-primary border-0 p-6 space-y-4">
@@ -153,6 +234,7 @@ export default function AddMemoryPage() {
               <Button
                 onClick={handleDiscard}
                 variant="outline"
+                disabled={isSaving}
                 className="flex-1 border-primary/30 hover:bg-primary/5 bg-transparent"
               >
                 <X size={16} className="mr-2" />
@@ -160,9 +242,17 @@ export default function AddMemoryPage() {
               </Button>
               <Button
                 onClick={handleSave}
+                disabled={isSaving}
                 className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground glow-primary"
               >
-                Save Memory
+                {isSaving ? (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Memory"
+                )}
               </Button>
             </div>
           </div>
