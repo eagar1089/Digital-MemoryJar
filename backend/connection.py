@@ -4,22 +4,20 @@ from typing import Tuple
 import pymongo
 from pymongo import MongoClient
 
-# Use environment variable MONGO_URI if present, otherwise fallback to the local/embedded string.
-MONGO_URI = os.getenv("MONGO_URI") or "mongodb+srv://dbadmin:dbadmin@cluster0.gfkc1ci.mongodb.net/?appName=Cluster0"
+MONGO_URI = os.getenv("MONGO_URI") 
+COLLECTION_NAME = os.getenv("COLLECTION_NAME") 
 
 _client = None
 
 
 def get_client() -> MongoClient:
-    """Return a singleton MongoClient instance."""
     global _client
     if _client is None:
         _client = MongoClient(MONGO_URI)
     return _client
 
 
-def get_db(db_name: str = "dmj"):
-    """Return a database handle."""
+def get_db(db_name: str = COLLECTION_NAME):
     client = get_client()
     return client[db_name]
 
@@ -30,9 +28,8 @@ def get_collection(name: str, db_name: str = "dmj"):
 
 
 if __name__ == "__main__":
-    # Quick manual test when running this file directly
     try:
-        col = get_collection("customers")
+        col = get_collection("memories")
         print("Connected to collection:", col.name)
         print("Documents count:", col.count_documents({}))
     except Exception as e:
