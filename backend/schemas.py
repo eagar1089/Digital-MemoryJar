@@ -7,15 +7,15 @@ from pydantic import BaseModel, Field
 class EmotionScores(BaseModel):
     """Emotion analysis from NLP."""
     joy: Optional[float] = Field(None, description="Joy score 0-1")
-    gratitude: Optional[float] = Field(None, description="Gratitude score 0-1")
     sadness: Optional[float] = Field(None, description="Sadness score 0-1")
     anger: Optional[float] = Field(None, description="Anger score 0-1")
-    neutral: Optional[float] = Field(None, description="Neutral score 0-1")
-    # Can add more emotions as needed
+    fear: Optional[float] = Field(None, description="Fear score 0-1")
+    surprise: Optional[float] = Field(None, description="Surprise score 0-1")
+    disgust: Optional[float] = Field(None, description="Disgust score 0-1")
+
 
 
 class NLPInsights(BaseModel):
-    """NLP extraction and analysis results."""
     emotion_scores: Optional[EmotionScores] = Field(None, description="Emotion sentiment analysis")
     keywords: Optional[List[str]] = Field(default_factory=list, description="Extracted keywords/phrases")
     topics: Optional[List[str]] = Field(default_factory=list, description="Identified topics (e.g., Work, Health, Relationships)")
@@ -23,7 +23,6 @@ class NLPInsights(BaseModel):
 
 
 class MemoryCreate(BaseModel):
-    """Raw memory data captured from user input."""
     content: str = Field(..., description="Raw text content of the memory")
     content_clean: Optional[str] = Field(None, description="Cleaned/normalized version of content")
     mood: Optional[str] = Field(None, description="Detected mood (e.g., happy, sad, reflective)")
@@ -35,7 +34,6 @@ class MemoryCreate(BaseModel):
 
 
 class MemoryDB(MemoryCreate):
-    """Memory as stored in database with metadata."""
     id: str = Field(..., description="MongoDB ObjectId as string")
     uid: Optional[str] = Field(None, description="Firebase user ID")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")

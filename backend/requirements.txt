@@ -8,4 +8,6 @@ nltk
 apscheduler
 transformers 
 torch
+sentence-transformers
+keybert
 python-dotenv

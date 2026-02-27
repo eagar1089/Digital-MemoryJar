@@ -6,25 +6,13 @@ from backend.connection import get_collection
 
 
 def create_memory(data: dict) -> str:
-    """Create a new memory with all raw data and NLP insights.
-    
-    Expected fields:
-    - content: Raw text input (required)
-    - content_clean: Cleaned version (optional, can be generated later)
-    - mood: Detected mood (optional)
-    - ai_summary: AI summary (optional)
-    - tags: Associated tags (optional)
-    - nlp_insights: NLP extraction results with emotion_scores, keywords, topics (optional)
-    - embedding_id: FAISS vector index reference (optional, set during embedding phase)
-    - uid: Firebase user ID (added by router)
-    """
     col = get_collection("memories")
     
     # Add timestamps and metadata
     now = datetime.utcnow()
     data["created_at"] = now
     data["updated_at"] = now
-    # Only mark as processed if embedding_id and nlp_insights are present
+    
     data["is_processed"] = "embedding_id" in data and "nlp_insights" in data
     
     res = col.insert_one(data)
@@ -32,12 +20,6 @@ def create_memory(data: dict) -> str:
 
 
 def list_memories(limit: int = 50, processed_only: bool = False) -> List[dict]:
-    """List memories in reverse chronological order.
-    
-    Args:
-        limit: Max number of memories to return
-        processed_only: If True, only return memories with is_processed=True
-    """
     col = get_collection("memories")
     
     query = {}
@@ -115,10 +97,11 @@ def get_stats() -> dict:
         {"$group": {
             "_id": None,
             "joy_avg": {"$avg": "$nlp_insights.emotion_scores.joy"},
-            "gratitude_avg": {"$avg": "$nlp_insights.emotion_scores.gratitude"},
             "sadness_avg": {"$avg": "$nlp_insights.emotion_scores.sadness"},
             "anger_avg": {"$avg": "$nlp_insights.emotion_scores.anger"},
-            "neutral_avg": {"$avg": "$nlp_insights.emotion_scores.neutral"},
+            "fear_avg": {"$avg": "$nlp_insights.emotion_scores.fear"},
+            "surprise_avg": {"$avg": "$nlp_insights.emotion_scores.surprise"},
+            "disgust_avg": {"$avg": "$nlp_insights.emotion_scores.disgust"},
         }},
     ]
     emotion_agg = list(col.aggregate(emotion_pipeline))
@@ -127,10 +110,11 @@ def get_stats() -> dict:
         e = emotion_agg[0]
         top_emotions = {
             "joy": round(e.get("joy_avg", 0), 3),
-            "gratitude": round(e.get("gratitude_avg", 0), 3),
             "sadness": round(e.get("sadness_avg", 0), 3),
             "anger": round(e.get("anger_avg", 0), 3),
-            "neutral": round(e.get("neutral_avg", 0), 3),
+            "fear": round(e.get("fear_avg", 0), 3),
+            "surprise": round(e.get("surprise_avg", 0), 3),
+            "disgust": round(e.get("disgust_avg", 0), 3),
         }
     
     # Get top topics

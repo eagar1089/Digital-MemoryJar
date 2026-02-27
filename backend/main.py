@@ -37,20 +37,20 @@ app.include_router(memories.router, prefix="/memories", tags=["memories"])
 app.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 
 
-# Background scheduler for processing unprocessed memories
-scheduler = BackgroundScheduler()
+# # Background scheduler for processing unprocessed memories
+# scheduler = BackgroundScheduler()
 
-def process_memories_job():
-    """Job that runs every 10 seconds to process unprocessed memories."""
-    try:
-        # logger.info("Running memory processing job...")
-        process_unprocessed_memories()
-        # logger.info("Memory processing job completed.")
-    except Exception as e:
-        logger.error(f"Error in memory processing job: {e}")
+# def process_memories_job():
+#     """Job that runs every 10 seconds to process unprocessed memories."""
+#     try:
+#         # logger.info("Running memory processing job...")
+#         process_unprocessed_memories()
+#         # logger.info("Memory processing job completed.")
+#     except Exception as e:
+#         logger.error(f"Error in memory processing job: {e}")
 
-scheduler.add_job(process_memories_job, "interval", seconds=10, id="process_memories")
-scheduler.start()
+# scheduler.add_job(process_memories_job, "interval", seconds=10, id="process_memories")
+# scheduler.start()
 
 
 @app.on_event("startup")
@@ -60,7 +60,7 @@ def startup_event():
 
 @app.on_event("shutdown")
 def shutdown_event():
-    scheduler.shutdown()
+    # scheduler.shutdown()
     logger.info("*********************************Application shutdown - scheduler stopped*********************************")
 
 
@@ -68,4 +68,3 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)
-
