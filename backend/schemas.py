@@ -33,6 +33,17 @@ class MemoryCreate(BaseModel):
     embedding_id: Optional[int] = Field(None, description="Reference to FAISS index ID for vector search")
 
 
+class MemoryAnalyzeRequest(BaseModel):
+    content: str = Field(..., description="Raw text content to analyze")
+
+
+class MemoryAnalyzeResponse(BaseModel):
+    ai_summary: str = Field(..., description="Generated concise summary")
+    mood: str = Field(..., description="Detected mood label")
+    tags: List[str] = Field(default_factory=list, description="Detected keyword/topic tags")
+    nlp_insights: Optional[NLPInsights] = Field(None, description="Detailed NLP extraction results")
+
+
 class MemoryDB(MemoryCreate):
     id: str = Field(..., description="MongoDB ObjectId as string")
     uid: Optional[str] = Field(None, description="Firebase user ID")

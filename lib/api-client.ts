@@ -7,14 +7,52 @@ import { getAuth } from "firebase/auth";
 // Set this to your backend URL. For local dev: http://127.0.0.1:8000
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
+async function waitForAuthReady(timeoutMs = 4000): Promise<void> {
+  const auth = getAuth();
+  if (auth.currentUser) return;
+
+  await new Promise<void>((resolve) => {
+    const timeout = setTimeout(() => {
+      unsubscribe();
+      resolve();
+    }, timeoutMs);
+
+    const unsubscribe = auth.onAuthStateChanged(() => {
+      clearTimeout(timeout);
+      unsubscribe();
+      resolve();
+    });
+  });
+}
+
 /**
  * Get Firebase ID token from current user.
  */
-async function getFirebaseToken(): Promise<string | null> {
+async function getFirebaseToken(forceRefresh = false): Promise<string | null> {
   const auth = getAuth();
+  if (!auth.currentUser) {
+    await waitForAuthReady();
+  }
+
   const user = auth.currentUser;
   if (!user) return null;
-  return await user.getIdToken(true); // Force refresh
+  return await user.getIdToken(forceRefresh);
+}
+
+async function extractErrorMessage(response: Response): Promise<string> {
+  try {
+    const payload = await response.json();
+    if (payload && typeof payload.detail === "string") {
+      return payload.detail;
+    }
+    return JSON.stringify(payload);
+  } catch {
+    try {
+      return await response.text();
+    } catch {
+      return "Unknown error";
+    }
+  }
 }
 
 /**
@@ -24,7 +62,7 @@ export async function apiFetch(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const token = await getFirebaseToken();
+  const token = await getFirebaseToken(false);
 
   if (!token) {
     throw new Error("No Firebase token available. User not authenticated.");
@@ -41,10 +79,26 @@ export async function apiFetch(
     headers,
   });
 
-  // If 401, user token expired or is invalid
+  // If 401, try one forced refresh and retry once
   if (response.status === 401) {
-    // Optionally redirect to login or refresh session
-    console.error("Auth failed. Redirecting to login.");
+    const refreshedToken = await getFirebaseToken(true);
+    if (refreshedToken) {
+      const retryResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${refreshedToken}`,
+          ...(options.headers || {}),
+        },
+      });
+
+      if (retryResponse.status !== 401) {
+        return retryResponse;
+      }
+    }
+
+    const detail = await extractErrorMessage(response);
+    console.error(`Auth failed for ${endpoint}: ${detail}`);
   }
 
   return response;
@@ -55,7 +109,10 @@ export async function apiFetch(
  */
 export async function apiGet<T>(endpoint: string): Promise<T> {
   const res = await apiFetch(endpoint, { method: "GET" });
-  if (!res.ok) throw new Error(`GET ${endpoint} failed: ${res.status}`);
+  if (!res.ok) {
+    const detail = await extractErrorMessage(res);
+    throw new Error(`GET ${endpoint} failed: ${res.status} - ${detail}`);
+  }
   return res.json();
 }
 
@@ -67,22 +124,13 @@ export async function apiPost<T>(endpoint: string, body: unknown): Promise<T> {
     method: "POST",
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`POST ${endpoint} failed: ${res.status}`);
+  if (!res.ok) {
+    const detail = await extractErrorMessage(res);
+    throw new Error(`POST ${endpoint} failed: ${res.status} - ${detail}`);
+  }
   return res.json();
 }
 
-/**
- * Unauthenticated POST helper for development-only endpoints (e.g. /memories/dev)
- */
-export async function apiPostNoAuth<T>(endpoint: string, body: unknown): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`POST ${endpoint} failed: ${res.status}`);
-  return res.json();
-}
 
 // NLP Types
 export interface EmotionScores {
@@ -98,6 +146,13 @@ export interface NLPInsights {
   keywords?: string[];
   topics?: string[];
   entities?: string[];
+}
+
+export interface AnalyzeMemoryResponse {
+  ai_summary: string;
+  mood: string;
+  tags: string[];
+  nlp_insights?: NLPInsights;
 }
 
 // Memory types
@@ -139,6 +194,10 @@ export const api = {
 
   async createMemory(data: MemoryCreatePayload): Promise<{ id: string; status: string; message: string }> {
     return apiPost("/memories/", data);
+  },
+
+  async analyzeMemory(content: string): Promise<AnalyzeMemoryResponse> {
+    return apiPost("/memories/analyze", { content });
   },
 
   async getStats(): Promise<StatsResponse> {

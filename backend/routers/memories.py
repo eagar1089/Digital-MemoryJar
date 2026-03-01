@@ -1,72 +1,127 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException
+
 from backend import crud, schemas
 from backend.auth_deps import verify_firebase_token
-
-##for hf emotion model testing
-from backend.nlp_processor import extract_emotion_scores
+from backend.nlp_processor import extract_emotion_scores, extract_keywords, categorize_topics
 
 
-
-import logging
 router = APIRouter()
-class DevEmotionRequest(BaseModel):
-	text: str
+logger = logging.getLogger(__name__)
+
+
+def _stage_log(stage: str) -> None:
+	message = f"[NLP][analyze] {stage}"
+	print(message)
+	logger.info(message)
+
+
+def _save_stage_log(stage: str) -> None:
+	message = f"[MEMORY][save] {stage}"
+	print(message)
+	logger.info(message)
+
+
+def _generate_simple_summary(text: str, max_words: int = 28) -> str:
+	"""Create a lightweight summary from raw memory text."""
+	cleaned = " ".join(text.split())
+	if not cleaned:
+		return ""
+
+	words = cleaned.split(" ")
+	if len(words) <= max_words:
+		return cleaned
+
+	return " ".join(words[:max_words]).rstrip(".,;: ") + "..."
+
+
+def _top_tags(keywords: List[str], topics: List[str], max_tags: int = 5) -> List[str]:
+	"""Combine and normalize keywords/topics into compact tag list."""
+	tags: List[str] = []
+	seen = set()
+
+	for item in (keywords or []) + (topics or []):
+		value = str(item).strip().lower()
+		if not value:
+			continue
+		value = value.replace("&", "and")
+		if value in seen:
+			continue
+		seen.add(value)
+		tags.append(value)
+		if len(tags) >= max_tags:
+			break
+
+	return tags
+
+
 @router.get("/", response_model=List[schemas.MemoryDB])
 async def list_memories(user: dict = Depends(verify_firebase_token)):
 	docs = crud.list_memories()
 	return docs
 
+
 @router.post("/", status_code=201)
-async def create_memory(request: Request, payload: schemas.MemoryCreate, user: dict = Depends(verify_firebase_token)):
-	logger = logging.getLogger(__name__)
-	auth_header = request.headers.get("authorization")
+async def create_memory(
+	payload: schemas.MemoryCreate,
+	user: dict = Depends(verify_firebase_token),
+):
+	_save_stage_log("1/3 received request")
 	data = payload.dict(exclude_none=True)
-	data["uid"] = user.get("uid")  # Associate memory with user informtn
+	data["uid"] = user.get("uid")
+	_save_stage_log(f"2/3 persisting for uid={data['uid']}")
 	inserted_id = crud.create_memory(data)
+	_save_stage_log(f"3/3 completed id={inserted_id}")
 	return {"id": inserted_id, "status": "created", "message": "Memory stored. Will be processed by AI."}
+
+
+@router.post("/analyze", response_model=schemas.MemoryAnalyzeResponse)
+async def analyze_memory(payload: schemas.MemoryAnalyzeRequest, user: dict = Depends(verify_firebase_token)):
+	_stage_log("1/6 received request")
+	text = payload.content.strip()
+	if not text:
+		_stage_log("validation failed: empty content")
+		raise HTTPException(status_code=400, detail="Memory content is required")
+
+	_stage_log("2/6 emotion scoring")
+	emotion_scores = extract_emotion_scores(text)
+	mood = max(emotion_scores, key=emotion_scores.get) if emotion_scores else "neutral"
+	_stage_log(f"emotion scoring done, mood={mood}")
+
+	_stage_log("3/6 keyword extraction")
+	keywords = extract_keywords(text)
+	_stage_log(f"keyword extraction done, count={len(keywords)}")
+
+	_stage_log("4/6 topic categorization")
+	topics = categorize_topics(text, keywords)
+	_stage_log(f"topic categorization done, count={len(topics)}")
+
+	_stage_log("5/6 summary + tags")
+	ai_summary = _generate_simple_summary(text)
+	tags = _top_tags(keywords, topics)
+	_stage_log(f"summary + tags done, tags={len(tags)}")
+
+	_stage_log("6/6 response ready")
+
+	return {
+		"ai_summary": ai_summary,
+		"mood": mood,
+		"tags": tags,
+		"nlp_insights": {
+			"emotion_scores": emotion_scores,
+			"keywords": keywords,
+			"topics": topics,
+			"entities": [],
+		},
+	}
 
 
 @router.get("/{memory_id}", response_model=schemas.MemoryDB)
 async def get_memory(memory_id: str, user: dict = Depends(verify_firebase_token)):
-	"""get a specific memory by uid"""
+	"""Get a specific memory by ID."""
 	memory = crud.get_memory_by_id(memory_id)
 	if not memory:
-		from fastapi import HTTPException
 		raise HTTPException(status_code=404, detail="Memory not found")
 	return memory
-
-
-
-
-
-
-
-
-
-# ============================================================  dev endpoints
-@router.post("/dev", status_code=201)
-async def create_memory_dev(payload: schemas.MemoryCreate):
-    logger = logging.getLogger(__name__)
-    logger.warning("Creating memory via /memories/dev (no auth) - development only")
-    data = payload.dict(exclude_none=True)
-    data["uid"] = "dev-user"
-    # inserted_id = crud.create_memory(data)
-    return {"id": inserted_id, "status": "created", "message": "Memory stored (dev). Will be processed by AI."}
-
-
-@router.post("/dev/analyze-emotion")
-async def analyze_emotion_dev(payload: DevEmotionRequest):
-	text = payload.text.strip()
-	if not text:
-		raise HTTPException(status_code=400)
-
-	emotion_scores = extract_emotion_scores(text)
-	mood = max(emotion_scores, key=emotion_scores.get) if emotion_scores else "neutral"
-
-	return {
-		"text": text,
-		"mood": mood,
-		"emotion_scores": emotion_scores,
-	}

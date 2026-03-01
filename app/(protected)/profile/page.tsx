@@ -1,33 +1,36 @@
 "use client"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Settings, Download, LogOut, Moon, Sun } from "lucide-react"
+import { api, type StatsResponse } from "@/lib/api-client"
 
 export default function ProfilePage() {
   const [theme, setTheme] = useState<"light" | "dark" | "auto">("auto")
+  const [stats, setStats] = useState<StatsResponse | null>(null)
+  const [name, setName] = useState("User")
+  const [email, setEmail] = useState("-")
 
-  const user = {
-    name: "Sagar Parab",
-    email: "sgrp9801@gmail.com",
-    joinDate: "January 2024",
-    avatar: "SA",
-    stats: {
-      totalMemories: 47,
-      thisMonth: 12,
-      streak: 8,
-      averageMood: 8.2,
-    },
-    badges: [
-      { name: "Optimistic Thinker", emoji: "🌟", description: "Mostly positive entries" },
-      { name: "Reflective Soul", emoji: "🤔", description: "Deep and thoughtful" },
-      { name: "Consistent Logger", emoji: "📝", description: "8-day streak" },
-    ],
-  }
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [me, statsRes] = await Promise.all([api.getMe(), api.getStats()])
+        setStats(statsRes)
+        setEmail(me?.email || "-")
+        setName(me?.email ? me.email.split("@")[0] : "User")
+      } catch (error) {
+        console.error("Profile data load failed:", error)
+      }
+    }
+
+    loadData()
+  }, [])
+
+  const initials = name.slice(0, 2).toUpperCase()
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-24">
+    <main className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 pb-24">
       {/* Background gradient orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl"></div>
@@ -48,13 +51,13 @@ export default function ProfilePage() {
         {/* User info card */}
         <Card className="glass-gradient-primary border-0 p-6 space-y-4">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-xl">
-              {user.avatar}
+            <div className="w-16 h-16 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-xl">
+              {initials}
             </div>
             <div className="flex-1">
-              <h2 className="text-lg font-bold">{user.name}</h2>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
-              <p className="text-xs text-muted-foreground mt-1">Joined {user.joinDate}</p>
+              <h2 className="text-lg font-bold">{name}</h2>
+              <p className="text-sm text-muted-foreground">{email}</p>
+              <p className="text-xs text-muted-foreground mt-1">Account connected</p>
             </div>
           </div>
         </Card>
@@ -62,38 +65,22 @@ export default function ProfilePage() {
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="glass-gradient-primary border-0 p-4 text-center space-y-2">
-            <p className="text-2xl font-bold">{user.stats.totalMemories}</p>
+            <p className="text-2xl font-bold">{stats?.total_memories ?? 0}</p>
             <p className="text-xs text-muted-foreground">Total Memories</p>
           </Card>
           <Card className="glass-gradient-secondary border-0 p-4 text-center space-y-2">
-            <p className="text-2xl font-bold">{user.stats.streak}</p>
-            <p className="text-xs text-muted-foreground">Day Streak</p>
+            <p className="text-2xl font-bold capitalize">{stats?.most_common_mood || "-"}</p>
+            <p className="text-xs text-muted-foreground">Common Mood</p>
           </Card>
           <Card className="glass-gradient-cool border-0 p-4 text-center space-y-2">
-            <p className="text-2xl font-bold">{user.stats.thisMonth}</p>
-            <p className="text-xs text-muted-foreground">This Month</p>
+            <p className="text-2xl font-bold">{stats?.top_topics?.length ?? 0}</p>
+            <p className="text-xs text-muted-foreground">Top Topics</p>
           </Card>
           <Card className="glass-gradient-accent border-0 p-4 text-center space-y-2">
-            <p className="text-2xl font-bold">{user.stats.averageMood}</p>
-            <p className="text-xs text-muted-foreground">Avg. Mood</p>
+            <p className="text-2xl font-bold">{stats?.top_emotions ? Object.keys(stats.top_emotions).length : 0}</p>
+            <p className="text-xs text-muted-foreground">Emotion Signals</p>
           </Card>
         </div>
-
-        {/* Badges */}
-        <Card className="glass-gradient-primary border-0 p-6 space-y-4">
-          <h3 className="text-sm font-semibold">Achievements</h3>
-          <div className="space-y-3">
-            {user.badges.map((badge) => (
-              <div key={badge.name} className="flex items-start gap-3">
-                <span className="text-2xl">{badge.emoji}</span>
-                <div>
-                  <p className="text-sm font-medium">{badge.name}</p>
-                  <p className="text-xs text-muted-foreground">{badge.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
 
         {/* Theme toggle */}
         <Card className="glass-gradient-secondary border-0 p-4 space-y-3">

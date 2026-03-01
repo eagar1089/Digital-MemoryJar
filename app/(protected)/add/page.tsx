@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Sparkles, Mic, X, AlertCircle } from "lucide-react"
-import { apiPost, apiPostNoAuth } from "@/lib/api-client"
+import { api, apiPost } from "@/lib/api-client"
 
 export default function AddMemoryPage() {
   const router = useRouter()
@@ -17,6 +17,7 @@ export default function AddMemoryPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [aiSummary, setAiSummary] = useState("")
   const [detectedMood, setDetectedMood] = useState("")
+  const [detectedTags, setDetectedTags] = useState<string[]>([])
   const [error, setError] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
 
@@ -25,16 +26,20 @@ export default function AddMemoryPage() {
 
     setIsAnalyzing(true)
     setError("")
-    
-    // Simulate AI analysis (in real app, this would call your AI service)
-    setTimeout(() => {
-      setAiSummary(
-        "You reflected on your day and expressed feelings of accomplishment mixed with anticipation for upcoming challenges.",
-      )
-      setDetectedMood("reflective")
-      setIsAnalyzing(false)
+
+    try {
+      const analysis = await api.analyzeMemory(memory)
+      setAiSummary(analysis.ai_summary || "")
+      setDetectedMood(analysis.mood || "neutral")
+      setDetectedTags(analysis.tags || [])
       setAnalyzed(true)
-    }, 1500)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Analyze failed"
+      setError(errorMessage)
+      console.error("Analyze error:", err)
+    } finally {
+      setIsAnalyzing(false)
+    }
   }
 
   const handleSave = async () => {
@@ -48,7 +53,7 @@ export default function AddMemoryPage() {
         content: memory,
         mood: detectedMood || undefined,
         ai_summary: aiSummary || undefined,
-        tags: ["personal", "reflection", "growth"],
+        tags: detectedTags.length ? detectedTags : ["personal", "reflection", "growth"],
         recorded_by: "text",
       })
 
@@ -66,36 +71,6 @@ export default function AddMemoryPage() {
       }, 1500)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to save memory"
-
-      // If auth failed (401) or user not authenticated, try dev endpoint (local only)
-      if (typeof errorMessage === "string" && (errorMessage.includes("401") || errorMessage.includes("No Firebase token"))) {
-        try {
-          await apiPostNoAuth("/memories/dev", {
-            content: memory,
-            mood: detectedMood || undefined,
-            ai_summary: aiSummary || undefined,
-            tags: ["personal", "reflection", "growth"],
-            recorded_by: "text",
-          })
-          setSuccessMessage("Memory saved via dev endpoint! It's being processed by the AI pipeline...")
-          setTimeout(() => {
-            setMemory("")
-            setAnalyzed(false)
-            setAiSummary("")
-            setDetectedMood("")
-            setSuccessMessage("")
-            // router.push("/dashboard")
-          }, 1500)
-          return
-        } catch (devErr) {
-          const devMsg = devErr instanceof Error ? devErr.message : "Dev save failed"
-          setError(devMsg)
-          console.error("Dev save error:", devErr)
-          setIsSaving(false)
-          return
-        }
-      }
-
       setError(errorMessage)
       console.error("Save error:", err)
     } finally {
@@ -108,6 +83,7 @@ export default function AddMemoryPage() {
     setAnalyzed(false)
     setAiSummary("")
     setDetectedMood("")
+    setDetectedTags([])
     setError("")
   }
 
@@ -116,10 +92,16 @@ export default function AddMemoryPage() {
     happy: "😊",
     calm: "🌿",
     peaceful: "🌙",
+    neutral: "📝",
+    sadness: "😔",
+    anger: "😠",
+    fear: "😟",
+    surprise: "😮",
+    disgust: "🤢",
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-24">
+    <main className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 pb-24">
       {/* Background gradient orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl"></div>
@@ -143,7 +125,7 @@ export default function AddMemoryPage() {
         {/* Error message */}
         {error && (
           <Card className="bg-destructive/10 border-destructive/30 p-4 flex gap-3">
-            <AlertCircle size={16} className="text-destructive flex-shrink-0 mt-0.5" />
+            <AlertCircle size={16} className="text-destructive shrink-0 mt-0.5" />
             <p className="text-sm text-destructive">{error}</p>
           </Card>
         )}
@@ -221,11 +203,12 @@ export default function AddMemoryPage() {
             <Card className="glass-gradient-cool border-0 p-4 space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase">Tags</p>
               <div className="flex flex-wrap gap-2">
-                {["personal", "reflection", "growth"].map((tag) => (
+                {detectedTags.map((tag) => (
                   <span key={tag} className="px-3 py-1 bg-primary/10 text-primary text-xs rounded-full">
                     {tag}
                   </span>
                 ))}
+                {detectedTags.length === 0 && <span className="text-xs text-muted-foreground">No tags detected</span>}
               </div>
             </Card>
 

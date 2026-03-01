@@ -3,7 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 import logging
+from pathlib import Path
 
+# Load environment variables from .env before importing modules that depend on them
+load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
+load_dotenv()
 
 from backend.routers import auth, memories, dashboard
 from backend.nlp_processor import process_unprocessed_memories
@@ -11,9 +15,6 @@ from backend.nlp_processor import process_unprocessed_memories
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Load environment variables from .env
-load_dotenv()
 
 app = FastAPI(title="DMJ Backend")
 
