@@ -1,38 +1,117 @@
 "use client"
+import { useEffect, useMemo, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { api, type Memory, type StatsResponse } from "@/lib/api-client"
+
+type MoodDistributionItem = { name: string; value: number; emoji: string }
+
+const moodEmojis: Record<string, string> = {
+  joy: "😊",
+  happy: "😊",
+  calm: "🌿",
+  reflective: "🤔",
+  peaceful: "🌙",
+  sadness: "😔",
+  anger: "😠",
+  fear: "😨",
+  surprise: "😮",
+  disgust: "😖",
+}
 
 export default function DashboardPage() {
-  // Mock data for mood over time
-  const moodData = [
-    { day: "Mon", happy: 3, calm: 2, reflective: 1, peaceful: 2 },
-    { day: "Tue", happy: 2, calm: 3, reflective: 2, peaceful: 1 },
-    { day: "Wed", happy: 4, calm: 1, reflective: 2, peaceful: 2 },
-    { day: "Thu", happy: 3, calm: 2, reflective: 3, peaceful: 1 },
-    { day: "Fri", happy: 5, calm: 2, reflective: 1, peaceful: 3 },
-    { day: "Sat", happy: 2, calm: 4, reflective: 1, peaceful: 4 },
-    { day: "Sun", happy: 3, calm: 3, reflective: 2, peaceful: 3 },
-  ]
+  const [stats, setStats] = useState<StatsResponse | null>(null)
+  const [memories, setMemories] = useState<Memory[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Mock data for mood distribution
-  const moodDistribution = [
-    { name: "Happy", value: 22, emoji: "😊" },
-    { name: "Calm", value: 17, emoji: "🌿" },
-    { name: "Reflective", value: 12, emoji: "🤔" },
-    { name: "Peaceful", value: 16, emoji: "🌙" },
-  ]
+  useEffect(() => {
+    let mounted = true
 
-  const topWords = ["growth", "achievement", "peace", "connection", "reflection", "joy", "mindfulness"]
+    const loadDashboard = async () => {
+      try {
+        const [statsData, memoriesData] = await Promise.all([api.getStats(), api.getMemories()])
+        if (!mounted) return
+        setStats(statsData)
+        setMemories(memoriesData)
+      } catch (err) {
+        if (!mounted) return
+        setError(err instanceof Error ? err.message : "Failed to load analytics")
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
 
-  const insights = [
-    "You've been more reflective this week. Consider exploring what's on your mind.",
-    "Your mood tends to be most positive on Fridays and Saturdays.",
-    "You mention 'growth' and 'achievement' frequently in your entries.",
-    "Meditation and nature activities correlate with peaceful moods.",
-  ]
+    loadDashboard()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const moodDistribution = useMemo<MoodDistributionItem[]>(() => {
+    const source = stats?.top_emotions
+    if (!source) return []
+    const entries = Object.entries(source)
+      .filter(([, value]) => Number.isFinite(value))
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+
+    return entries.map(([name, value]) => ({
+      name: name.charAt(0).toUpperCase() + name.slice(1),
+      value: Math.round(value * 100),
+      emoji: moodEmojis[name] || "📝",
+    }))
+  }, [stats?.top_emotions])
+
+  const topWords = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const memory of memories) {
+      for (const keyword of memory.nlp_insights?.keywords || []) {
+        const key = keyword.toLowerCase()
+        counts.set(key, (counts.get(key) || 0) + 1)
+      }
+    }
+
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 7)
+      .map(([word]) => word)
+  }, [memories])
+
+  const moodData = useMemo(() => {
+    const dayMap = new Map<string, number>()
+    for (const memory of memories) {
+      const date = memory.created_at ? new Date(memory.created_at) : null
+      if (!date || Number.isNaN(date.getTime())) continue
+      const key = date.toLocaleDateString(undefined, { weekday: "short" })
+      dayMap.set(key, (dayMap.get(key) || 0) + 1)
+    }
+
+    return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => ({
+      day,
+      memories: dayMap.get(day) || 0,
+    }))
+  }, [memories])
+
+  const insights = useMemo(() => {
+    const items: string[] = []
+    if (stats?.most_common_mood) {
+      items.push(`Most common mood: ${stats.most_common_mood}.`)
+    }
+    if (stats?.top_topics && stats.top_topics.length > 0) {
+      items.push(`Top topics: ${stats.top_topics.slice(0, 3).join(", ")}.`)
+    }
+    if (memories.length > 0) {
+      items.push(`You have logged ${memories.length} recent memories.`)
+    }
+    if (items.length === 0) {
+      items.push("Add more memories to unlock analytics insights.")
+    }
+    return items
+  }, [stats?.most_common_mood, stats?.top_topics, memories.length])
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-24">
+    <main className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 pb-24">
       {/* Background gradient orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl"></div>
@@ -61,7 +140,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
                   <div
-                    className="bg-gradient-to-r from-primary to-accent h-full rounded-full"
+                    className="bg-linear-to-r from-primary to-accent h-full rounded-full"
                     style={{ width: `${mood.value}%` }}
                   ></div>
                 </div>
@@ -86,8 +165,7 @@ export default function DashboardPage() {
                     borderRadius: "8px",
                   }}
                 />
-                <Line type="monotone" dataKey="happy" stroke="oklch(0.65 0.15 280)" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="calm" stroke="oklch(0.72 0.12 200)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="memories" stroke="oklch(0.65 0.15 280)" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -106,6 +184,7 @@ export default function DashboardPage() {
                 {word}
               </span>
             ))}
+            {topWords.length === 0 && <p className="text-sm text-muted-foreground">No keywords yet</p>}
           </div>
         </Card>
 
@@ -115,30 +194,33 @@ export default function DashboardPage() {
           <div className="space-y-3">
             {insights.map((insight, i) => (
               <div key={i} className="flex gap-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0 mt-1.5"></div>
+                <div className="w-1.5 h-1.5 rounded-full bg-accent shrink-0 mt-1.5"></div>
                 <p className="text-sm text-muted-foreground">{insight}</p>
               </div>
             ))}
           </div>
         </Card>
 
+        {error && <Card className="glass border-destructive/20 p-4 text-sm text-destructive">{error}</Card>}
+        {loading && <Card className="glass border-primary/20 p-4 text-sm text-muted-foreground">Loading analytics...</Card>}
+
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="glass-gradient-primary border-0 p-4 text-center space-y-2">
-            <p className="text-2xl font-bold">47</p>
+            <p className="text-2xl font-bold">{stats?.total_memories ?? 0}</p>
             <p className="text-xs text-muted-foreground">Total Memories</p>
           </Card>
           <Card className="glass-gradient-secondary border-0 p-4 text-center space-y-2">
-            <p className="text-2xl font-bold">12</p>
-            <p className="text-xs text-muted-foreground">This Week</p>
+            <p className="text-2xl font-bold">{memories.length}</p>
+            <p className="text-xs text-muted-foreground">Loaded Memories</p>
           </Card>
           <Card className="glass-gradient-cool border-0 p-4 text-center space-y-2">
-            <p className="text-2xl font-bold">8.2</p>
-            <p className="text-xs text-muted-foreground">Avg. Mood</p>
+            <p className="text-2xl font-bold">{stats?.top_topics?.length ?? 0}</p>
+            <p className="text-xs text-muted-foreground">Top Topics</p>
           </Card>
           <Card className="glass-gradient-accent border-0 p-4 text-center space-y-2">
-            <p className="text-2xl font-bold">92%</p>
-            <p className="text-xs text-muted-foreground">Positive</p>
+            <p className="text-2xl font-bold">{stats?.most_common_mood ? "✓" : "-"}</p>
+            <p className="text-xs text-muted-foreground">Mood Detected</p>
           </Card>
         </div>
       </div>

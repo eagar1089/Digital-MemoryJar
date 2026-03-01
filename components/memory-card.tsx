@@ -20,14 +20,14 @@ const moodEmojis: Record<string, string> = {
 
 export function MemoryCard({ id, date, summary, mood, tags }: MemoryCardProps) {
   return (
-    <Link href={`/memory/${id}`}>
+    <Link href={`/${id}`}>
       <Card className="glass-gradient-primary border-0 p-4 space-y-3 cursor-pointer hover:border-primary/40 transition-all hover:shadow-lg">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <p className="text-xs text-muted-foreground">{date}</p>
             <p className="text-sm font-medium mt-1 line-clamp-2">{summary}</p>
           </div>
-          <span className="text-2xl flex-shrink-0">{moodEmojis[mood] || "📝"}</span>
+          <span className="text-2xl shrink-0">{moodEmojis[mood] || "📝"}</span>
         </div>
 
         {tags.length > 0 && (

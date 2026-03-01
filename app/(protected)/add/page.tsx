@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Sparkles, Mic, X, AlertCircle } from "lucide-react"
-import { apiPost, apiPostNoAuth } from "@/lib/api-client"
+import { api, apiPostNoAuth } from "@/lib/api-client"
 
 export default function AddMemoryPage() {
   const router = useRouter()
@@ -20,21 +20,34 @@ export default function AddMemoryPage() {
   const [error, setError] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
 
+  const buildSummaryFromText = (text: string) => {
+    const trimmed = text.trim()
+    if (!trimmed) return ""
+    if (trimmed.length <= 140) return trimmed
+    return `${trimmed.slice(0, 140).trim()}...`
+  }
+
   const handleAnalyze = async () => {
     if (!memory.trim()) return
 
     setIsAnalyzing(true)
     setError("")
-    
-    // Simulate AI analysis (in real app, this would call your AI service)
-    setTimeout(() => {
-      setAiSummary(
-        "You reflected on your day and expressed feelings of accomplishment mixed with anticipation for upcoming challenges.",
-      )
-      setDetectedMood("reflective")
-      setIsAnalyzing(false)
+
+    try {
+      const analysis = await apiPostNoAuth<{ mood?: string }>("/memories/dev/analyze-emotion", {
+        text: memory,
+      })
+      setAiSummary(buildSummaryFromText(memory))
+      setDetectedMood(analysis.mood || "reflective")
       setAnalyzed(true)
-    }, 1500)
+    } catch (err) {
+      setAiSummary(buildSummaryFromText(memory))
+      setDetectedMood("reflective")
+      setAnalyzed(true)
+      console.error("Analyze error:", err)
+    } finally {
+      setIsAnalyzing(false)
+    }
   }
 
   const handleSave = async () => {
@@ -43,8 +56,7 @@ export default function AddMemoryPage() {
     setSuccessMessage("")
 
     try {
-      // Call backend API to save memory and process it
-      const response = await apiPost("/memories/", {
+      await api.createMemory({
         content: memory,
         mood: detectedMood || undefined,
         ai_summary: aiSummary || undefined,
@@ -65,38 +77,7 @@ export default function AddMemoryPage() {
         router.push("/dashboard")
       }, 1500)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to save memory"
-
-      // If auth failed (401) or user not authenticated, try dev endpoint (local only)
-      if (typeof errorMessage === "string" && (errorMessage.includes("401") || errorMessage.includes("No Firebase token"))) {
-        try {
-          await apiPostNoAuth("/memories/dev", {
-            content: memory,
-            mood: detectedMood || undefined,
-            ai_summary: aiSummary || undefined,
-            tags: ["personal", "reflection", "growth"],
-            recorded_by: "text",
-          })
-          setSuccessMessage("Memory saved via dev endpoint! It's being processed by the AI pipeline...")
-          setTimeout(() => {
-            setMemory("")
-            setAnalyzed(false)
-            setAiSummary("")
-            setDetectedMood("")
-            setSuccessMessage("")
-            // router.push("/dashboard")
-          }, 1500)
-          return
-        } catch (devErr) {
-          const devMsg = devErr instanceof Error ? devErr.message : "Dev save failed"
-          setError(devMsg)
-          console.error("Dev save error:", devErr)
-          setIsSaving(false)
-          return
-        }
-      }
-
-      setError(errorMessage)
+      setError(err instanceof Error ? err.message : "Failed to save memory")
       console.error("Save error:", err)
     } finally {
       setIsSaving(false)
@@ -119,7 +100,7 @@ export default function AddMemoryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-24">
+    <main className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 pb-24">
       {/* Background gradient orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl"></div>
@@ -143,7 +124,7 @@ export default function AddMemoryPage() {
         {/* Error message */}
         {error && (
           <Card className="bg-destructive/10 border-destructive/30 p-4 flex gap-3">
-            <AlertCircle size={16} className="text-destructive flex-shrink-0 mt-0.5" />
+            <AlertCircle size={16} className="text-destructive shrink-0 mt-0.5" />
             <p className="text-sm text-destructive">{error}</p>
           </Card>
         )}

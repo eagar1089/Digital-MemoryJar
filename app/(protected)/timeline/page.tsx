@@ -1,14 +1,30 @@
 "use client"
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { MemoryCard } from "@/components/memory-card"
 import { Search } from "lucide-react"
+import { api, type Memory } from "@/lib/api-client"
+
+function formatMemoryDate(value?: string) {
+  if (!value) return "Unknown date"
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return "Unknown date"
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  })
+}
 
 export default function TimelinePage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedMood, setSelectedMood] = useState<string | null>(null)
+  const [memories, setMemories] = useState<Memory[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const moods = ["all", "happy", "calm", "reflective", "peaceful", "excited", "grateful"]
   const moodEmojis: Record<string, string> = {
@@ -21,48 +37,51 @@ export default function TimelinePage() {
     grateful: "🙏",
   }
 
-  // Mock data
-  const memories = [
-    {
-      id: "1",
-      date: "Today at 2:30 PM",
-      summary: "Had a productive day at work. Completed the project milestone and felt accomplished.",
-      mood: "happy",
-      tags: ["work", "achievement", "productivity"],
-    },
-    {
-      id: "2",
-      date: "Yesterday at 8:00 PM",
-      summary: "Evening walk in the park. Reflected on personal growth and future goals.",
-      mood: "reflective",
-      tags: ["nature", "reflection", "growth"],
-    },
-    {
-      id: "3",
-      date: "2 days ago at 6:15 PM",
-      summary: "Meditation session. Feeling peaceful and centered after a busy week.",
-      mood: "peaceful",
-      tags: ["mindfulness", "wellness", "peace"],
-    },
-    {
-      id: "4",
-      date: "3 days ago at 3:45 PM",
-      summary: "Coffee with an old friend. Great conversation and lots of laughter.",
-      mood: "happy",
-      tags: ["friendship", "connection", "joy"],
-    },
-  ]
+  useEffect(() => {
+    let mounted = true
 
-  const filteredMemories = memories.filter((memory) => {
+    const loadMemories = async () => {
+      try {
+        const data = await api.getMemories()
+        if (!mounted) return
+        setMemories(data)
+      } catch (err) {
+        if (!mounted) return
+        setError(err instanceof Error ? err.message : "Failed to load memories")
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+
+    loadMemories()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const timelineMemories = useMemo(
+    () =>
+      memories.map((memory) => ({
+        id: memory.id,
+        date: formatMemoryDate(memory.created_at),
+        summary: memory.ai_summary || memory.content,
+        mood: (memory.mood || "reflective").toLowerCase(),
+        tags: memory.tags || [],
+      })),
+    [memories],
+  )
+
+  const filteredMemories = timelineMemories.filter((memory) => {
+    const normalizedQuery = searchQuery.toLowerCase()
     const matchesSearch =
-      memory.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      memory.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      memory.summary.toLowerCase().includes(normalizedQuery) ||
+      memory.tags.some((tag) => tag.toLowerCase().includes(normalizedQuery))
     const matchesMood = !selectedMood || selectedMood === "all" || memory.mood === selectedMood
     return matchesSearch && matchesMood
   })
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-24">
+    <main className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 pb-24">
       {/* Background gradient orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl"></div>
@@ -110,9 +129,17 @@ export default function TimelinePage() {
           </div>
         </div>
 
+        {error && (
+          <Card className="glass border-destructive/20 p-4 text-sm text-destructive">{error}</Card>
+        )}
+
         {/* Memories list */}
         <div className="space-y-3">
-          {filteredMemories.length > 0 ? (
+          {loading ? (
+            <Card className="glass border-primary/20 p-8 text-center space-y-2">
+              <p className="text-muted-foreground">Loading memories...</p>
+            </Card>
+          ) : filteredMemories.length > 0 ? (
             filteredMemories.map((memory) => <MemoryCard key={memory.id} {...memory} />)
           ) : (
             <Card className="glass border-primary/20 p-8 text-center space-y-2">

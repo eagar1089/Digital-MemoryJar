@@ -1,26 +1,77 @@
 "use client"
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ArrowLeft, Edit2, Trash2, Share2 } from "lucide-react"
+import { api, type Memory } from "@/lib/api-client"
 
 export default function MemoryDetailPage({ params }: { params: { id: string } }) {
   const [isEditing, setIsEditing] = useState(false)
+  const [memory, setMemory] = useState<Memory | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Mock data
-  const memory = {
-    id: params.id,
-    date: "Today at 2:30 PM",
-    fullDate: "October 16, 2025",
-    title: "Productive Day at Work",
-    content:
-      "Had a really productive day at work today. I managed to complete the project milestone that we've been working on for the past two weeks. The team was supportive and collaborative, which made the process smooth. I felt a sense of accomplishment and pride in what we achieved together. Looking forward to the next phase of the project.",
-    summary: "Had a productive day at work. Completed the project milestone and felt accomplished.",
-    mood: "happy",
-    tags: ["work", "achievement", "productivity", "teamwork"],
-    aiInsight:
-      "Your entry shows strong positive emotions around achievement and collaboration. You tend to feel most fulfilled when working with supportive teams on meaningful projects.",
+  useEffect(() => {
+    let mounted = true
+
+    const loadMemory = async () => {
+      try {
+        const data = await api.getMemory(params.id)
+        if (!mounted) return
+        setMemory(data)
+      } catch (err) {
+        if (!mounted) return
+        setError(err instanceof Error ? err.message : "Failed to load memory")
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+
+    loadMemory()
+    return () => {
+      mounted = false
+    }
+  }, [params.id])
+
+  const fullDate = useMemo(() => {
+    if (!memory?.created_at) return "Unknown date"
+    const date = new Date(memory.created_at)
+    if (Number.isNaN(date.getTime())) return "Unknown date"
+    return date.toLocaleString(undefined, {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    })
+  }, [memory?.created_at])
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 pb-24">
+        <div className="relative z-10 max-w-md mx-auto px-4 py-8">
+          <Card className="glass border-primary/20 p-6 text-center text-muted-foreground">Loading memory...</Card>
+        </div>
+      </main>
+    )
+  }
+
+  if (error || !memory) {
+    return (
+      <main className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 pb-24">
+        <div className="relative z-10 max-w-md mx-auto px-4 py-8 space-y-4">
+          <Link
+            href="/timeline"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft size={16} />
+            Back
+          </Link>
+          <Card className="glass border-destructive/20 p-6 text-destructive">{error || "Memory not found"}</Card>
+        </div>
+      </main>
+    )
   }
 
   const moodEmojis: Record<string, string> = {
@@ -33,7 +84,7 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-24">
+    <main className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 pb-24">
       {/* Background gradient orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl"></div>
@@ -69,10 +120,10 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
         <Card className="glass border-primary/20 p-6 space-y-4">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">{memory.fullDate}</p>
-              <h1 className="text-2xl font-bold">{memory.title}</h1>
+              <p className="text-xs text-muted-foreground">{fullDate}</p>
+              <h1 className="text-2xl font-bold">Memory</h1>
             </div>
-            <span className="text-4xl">{moodEmojis[memory.mood]}</span>
+            <span className="text-4xl">{moodEmojis[memory.mood || ""] || "📝"}</span>
           </div>
 
           <div className="prose prose-sm max-w-none">
@@ -83,20 +134,24 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
         {/* AI Summary */}
         <Card className="glass border-primary/20 p-4 space-y-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase">AI Summary</p>
-          <p className="text-sm">{memory.summary}</p>
+          <p className="text-sm">{memory.ai_summary || memory.content}</p>
         </Card>
 
         {/* AI Insight */}
         <Card className="glass border-accent/20 bg-accent/5 p-4 space-y-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase">AI Insight</p>
-          <p className="text-sm">{memory.aiInsight}</p>
+          <p className="text-sm text-muted-foreground">
+            {(memory.nlp_insights?.topics || []).length > 0
+              ? `Top topics: ${(memory.nlp_insights?.topics || []).join(", ")}`
+              : "AI insight will appear after NLP processing completes."}
+          </p>
         </Card>
 
         {/* Tags */}
         <Card className="glass border-primary/20 p-4 space-y-3">
           <p className="text-xs font-semibold text-muted-foreground uppercase">Tags</p>
           <div className="flex flex-wrap gap-2">
-            {memory.tags.map((tag) => (
+            {(memory.tags || []).map((tag) => (
               <span key={tag} className="px-3 py-1 bg-primary/10 text-primary text-xs rounded-full">
                 {tag}
               </span>
