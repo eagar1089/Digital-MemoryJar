@@ -5,7 +5,7 @@ from backend import crud, schemas
 from backend.auth_deps import verify_firebase_token
 
 ##for hf emotion model testing
-from backend.nlp_processor import extract_emotion_scores
+from backend.nlp import extract_emotion_scores
 
 
 

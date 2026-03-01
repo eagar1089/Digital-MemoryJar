@@ -6,7 +6,7 @@ import logging
 
 
 from backend.routers import auth, memories, dashboard
-from backend.nlp_processor import process_unprocessed_memories
+from backend.nlp import process_unprocessed_memories
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
