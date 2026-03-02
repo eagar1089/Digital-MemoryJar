@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import logging
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,7 @@ _initialize_firebase_admin()
 
 
 security = HTTPBearer()
+optional_security = HTTPBearer(auto_error=False)
 
 
 async def verify_firebase_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
@@ -78,4 +80,23 @@ async def verify_firebase_token(credentials: HTTPAuthorizationCredentials = Depe
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid or expired token: {str(e)}",
         )
+
+
+async def verify_firebase_token_optional(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
+) -> Optional[dict]:
+    """
+    Optional auth dependency for read-only endpoints.
+    Returns decoded token when valid, otherwise returns None.
+    """
+    if not credentials or not credentials.credentials:
+        return None
+
+    token = credentials.credentials
+    try:
+        decoded_token = auth.verify_id_token(token)
+        return decoded_token
+    except Exception as e:
+        logger.warning("Optional Firebase token verification failed: %s", str(e))
+        return None
 

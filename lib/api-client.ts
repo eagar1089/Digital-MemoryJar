@@ -131,6 +131,18 @@ export async function apiPost<T>(endpoint: string, body: unknown): Promise<T> {
   return res.json();
 }
 
+export async function apiPut<T>(endpoint: string, body: unknown): Promise<T> {
+  const res = await apiFetch(endpoint, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const detail = await extractErrorMessage(res);
+    throw new Error(`PUT ${endpoint} failed: ${res.status} - ${detail}`);
+  }
+  return res.json();
+}
+
 
 // NLP Types
 export interface EmotionScores {
@@ -167,6 +179,13 @@ export interface MemoryCreatePayload {
   embedding_id?: number; // FAISS vector index reference
 }
 
+export interface MemoryUpdatePayload {
+  content?: string;
+  mood?: string;
+  ai_summary?: string;
+  tags?: string[];
+}
+
 export interface Memory extends MemoryCreatePayload {
   id: string;
   uid: string;
@@ -180,6 +199,12 @@ export interface StatsResponse {
   most_common_mood?: string;
   top_emotions?: Record<string, number>;
   top_topics?: string[];
+}
+
+export interface MeResponse {
+  uid?: string;
+  email?: string;
+  email_verified?: boolean;
 }
 
 // API methods
@@ -196,6 +221,10 @@ export const api = {
     return apiPost("/memories/", data);
   },
 
+  async updateMemory(id: string, data: MemoryUpdatePayload): Promise<Memory> {
+    return apiPut(`/memories/${id}`, data);
+  },
+
   async analyzeMemory(content: string): Promise<AnalyzeMemoryResponse> {
     return apiPost("/memories/analyze", { content });
   },
@@ -204,7 +233,7 @@ export const api = {
     return apiGet("/dashboard/stats");
   },
 
-  async getMe() {
+  async getMe(): Promise<MeResponse> {
     return apiGet("/auth/me");
   },
 };

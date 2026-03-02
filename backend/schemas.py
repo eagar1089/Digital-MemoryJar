@@ -33,6 +33,13 @@ class MemoryCreate(BaseModel):
     embedding_id: Optional[int] = Field(None, description="Reference to FAISS index ID for vector search")
 
 
+class MemoryUpdate(BaseModel):
+    content: Optional[str] = Field(None, description="Raw text content of the memory")
+    mood: Optional[str] = Field(None, description="Updated mood")
+    ai_summary: Optional[str] = Field(None, description="Updated AI summary")
+    tags: Optional[List[str]] = Field(None, description="Updated tags")
+
+
 class MemoryAnalyzeRequest(BaseModel):
     content: str = Field(..., description="Raw text content to analyze")
 

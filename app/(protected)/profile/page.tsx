@@ -1,44 +1,63 @@
 "use client"
-import { useEffect, useState } from "react"
+
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Settings, Download, LogOut, Moon, Sun } from "lucide-react"
-import { api, type StatsResponse } from "@/lib/api-client"
+import { api, type Memory, type StatsResponse } from "@/lib/api-client"
 
 export default function ProfilePage() {
   const [theme, setTheme] = useState<"light" | "dark" | "auto">("auto")
   const [stats, setStats] = useState<StatsResponse | null>(null)
+  const [memories, setMemories] = useState<Memory[]>([])
   const [name, setName] = useState("User")
   const [email, setEmail] = useState("-")
+  const [error, setError] = useState("")
 
   useEffect(() => {
+    let mounted = true
+
     async function loadData() {
       try {
-        const [me, statsRes] = await Promise.all([api.getMe(), api.getStats()])
+        const [me, statsRes, memoriesRes] = await Promise.all([api.getMe(), api.getStats(), api.getMemories()])
+        if (!mounted) return
         setStats(statsRes)
+        setMemories(memoriesRes)
         setEmail(me?.email || "-")
         setName(me?.email ? me.email.split("@")[0] : "User")
-      } catch (error) {
-        console.error("Profile data load failed:", error)
+        setError("")
+      } catch (err) {
+        if (!mounted) return
+        const message = err instanceof Error ? err.message : "Failed to load profile"
+        setError(message)
       }
     }
 
     loadData()
+    return () => {
+      mounted = false
+    }
   }, [])
+
+  const thisMonthCount = useMemo(() => {
+    const now = new Date()
+    return memories.filter((memory) => {
+      const date = new Date(memory.created_at)
+      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
+    }).length
+  }, [memories])
 
   const initials = name.slice(0, 2).toUpperCase()
 
   return (
     <main className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 pb-24">
-      {/* Background gradient orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-20 right-10 w-72 h-72 bg-accent/10 rounded-full blur-3xl"></div>
       </div>
 
       <div className="relative z-10 max-w-md mx-auto px-4 py-8 space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Profile</h1>
           <Link href="/settings">
@@ -48,7 +67,12 @@ export default function ProfilePage() {
           </Link>
         </div>
 
-        {/* User info card */}
+        {error && (
+          <Card className="glass border-destructive/30 p-4">
+            <p className="text-sm text-destructive">{error}</p>
+          </Card>
+        )}
+
         <Card className="glass-gradient-primary border-0 p-6 space-y-4">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-xl">
@@ -62,7 +86,6 @@ export default function ProfilePage() {
           </div>
         </Card>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="glass-gradient-primary border-0 p-4 text-center space-y-2">
             <p className="text-2xl font-bold">{stats?.total_memories ?? 0}</p>
@@ -73,16 +96,15 @@ export default function ProfilePage() {
             <p className="text-xs text-muted-foreground">Common Mood</p>
           </Card>
           <Card className="glass-gradient-cool border-0 p-4 text-center space-y-2">
+            <p className="text-2xl font-bold">{thisMonthCount}</p>
+            <p className="text-xs text-muted-foreground">This Month</p>
+          </Card>
+          <Card className="glass-gradient-accent border-0 p-4 text-center space-y-2">
             <p className="text-2xl font-bold">{stats?.top_topics?.length ?? 0}</p>
             <p className="text-xs text-muted-foreground">Top Topics</p>
           </Card>
-          <Card className="glass-gradient-accent border-0 p-4 text-center space-y-2">
-            <p className="text-2xl font-bold">{stats?.top_emotions ? Object.keys(stats.top_emotions).length : 0}</p>
-            <p className="text-xs text-muted-foreground">Emotion Signals</p>
-          </Card>
         </div>
 
-        {/* Theme toggle */}
         <Card className="glass-gradient-secondary border-0 p-4 space-y-3">
           <p className="text-sm font-semibold">Theme</p>
           <div className="flex gap-2">
@@ -106,7 +128,6 @@ export default function ProfilePage() {
           </div>
         </Card>
 
-        {/* Action buttons */}
         <div className="space-y-2 pt-4">
           <Button variant="outline" className="w-full border-primary/30 hover:bg-primary/5 bg-transparent">
             <Download size={16} className="mr-2" />

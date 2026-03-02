@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Edit2, Trash2, Share2 } from "lucide-react"
 import { api, type Memory } from "@/lib/api-client"
 
@@ -11,12 +13,21 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
   const [isEditing, setIsEditing] = useState(false)
   const [memory, setMemory] = useState<Memory | null>(null)
   const [error, setError] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
+  const [draftContent, setDraftContent] = useState("")
+  const [draftSummary, setDraftSummary] = useState("")
+  const [draftMood, setDraftMood] = useState("")
+  const [draftTags, setDraftTags] = useState("")
 
   useEffect(() => {
     async function loadMemory() {
       try {
         const memoryRes = await api.getMemory(params.id)
         setMemory(memoryRes)
+        setDraftContent(memoryRes.content || "")
+        setDraftSummary(memoryRes.ai_summary || "")
+        setDraftMood(memoryRes.mood || "")
+        setDraftTags((memoryRes.tags || []).join(", "))
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to load memory"
         setError(message)
@@ -49,6 +60,38 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
     return "NLP processed this memory, but no strong topic signal was found."
   }, [memory])
 
+  async function handleSaveChanges() {
+    if (!memory) return
+
+    setIsSaving(true)
+    setError("")
+    try {
+      const tags = draftTags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+
+      const updated = await api.updateMemory(memory.id, {
+        content: draftContent,
+        ai_summary: draftSummary,
+        mood: draftMood || undefined,
+        tags,
+      })
+
+      setMemory(updated)
+      setDraftContent(updated.content || "")
+      setDraftSummary(updated.ai_summary || "")
+      setDraftMood(updated.mood || "")
+      setDraftTags((updated.tags || []).join(", "))
+      setIsEditing(false)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to update memory"
+      setError(message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   return (
     <main className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 pb-24">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -69,7 +112,15 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => setIsEditing(!isEditing)}
+              onClick={() => {
+                if (!isEditing && memory) {
+                  setDraftContent(memory.content || "")
+                  setDraftSummary(memory.ai_summary || "")
+                  setDraftMood(memory.mood || "")
+                  setDraftTags((memory.tags || []).join(", "))
+                }
+                setIsEditing(!isEditing)
+              }}
               className="text-muted-foreground hover:text-foreground"
             >
               <Edit2 size={16} />
@@ -103,15 +154,44 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
                 <span className="text-4xl">{moodEmojis[memory.mood || "neutral"] || "📝"}</span>
               </div>
 
-              <div className="prose prose-sm max-w-none">
-                <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">{memory.content}</p>
-              </div>
+              {isEditing ? (
+                <Textarea
+                  value={draftContent}
+                  onChange={(e) => setDraftContent(e.target.value)}
+                  className="min-h-28"
+                />
+              ) : (
+                <div className="prose prose-sm max-w-none">
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">{memory.content}</p>
+                </div>
+              )}
             </Card>
 
             <Card className="glass border-primary/20 p-4 space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase">AI Summary</p>
-              <p className="text-sm">{memory.ai_summary || "No summary generated yet."}</p>
+              {isEditing ? (
+                <Textarea
+                  value={draftSummary}
+                  onChange={(e) => setDraftSummary(e.target.value)}
+                  className="min-h-20"
+                />
+              ) : (
+                <p className="text-sm">{memory.ai_summary || "No summary generated yet."}</p>
+              )}
             </Card>
+
+            {isEditing && (
+              <Card className="glass border-primary/20 p-4 space-y-3">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Mood</p>
+                  <Input value={draftMood} onChange={(e) => setDraftMood(e.target.value)} placeholder="e.g. calm" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Tags (comma separated)</p>
+                  <Input value={draftTags} onChange={(e) => setDraftTags(e.target.value)} placeholder="work, growth" />
+                </div>
+              </Card>
+            )}
 
             <Card className="glass border-accent/20 bg-accent/5 p-4 space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase">AI Insight</p>
@@ -140,8 +220,12 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
             <Share2 size={16} className="mr-2" />
             Share
           </Button>
-          <Button className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground glow-primary">
-            {isEditing ? "Editing..." : "Save Changes"}
+          <Button
+            onClick={isEditing ? handleSaveChanges : () => setIsEditing(true)}
+            disabled={isSaving}
+            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground glow-primary"
+          >
+            {isSaving ? "Saving..." : isEditing ? "Save Changes" : "Edit Memory"}
           </Button>
         </div>
       </div>

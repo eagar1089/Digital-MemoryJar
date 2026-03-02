@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex flex-col items-center justify-center px-4 md:px-8 py-12 md:py-20">
+    <main className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 flex flex-col items-center justify-center px-4 md:px-8 py-12 md:py-20">
       {/* Background gradient orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 md:top-40 md:left-20 w-72 md:w-96 h-72 md:h-96 bg-primary/10 rounded-full blur-3xl"></div>
