@@ -89,3 +89,5 @@ backend/.env
 .python-version
 pip-wheel-metadata/
 node_modules
+.vercel
+.env*.local

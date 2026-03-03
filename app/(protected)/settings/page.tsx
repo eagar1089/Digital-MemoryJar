@@ -1,17 +1,136 @@
 "use client"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { ArrowLeft, Bell, Lock, Database, Eye } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { ArrowLeft, Bell, Lock, Database, Eye, Download, LogOut, Sun, Moon, UserCircle2 } from "lucide-react"
+import { api } from "@/lib/api-client"
+import { useTheme } from "@/lib/theme-provider"
+import { useAuth } from "@/lib/auth-context"
+import { auth } from "@/lib/firebase"
+import { signOut, updateProfile } from "firebase/auth"
 
 export default function SettingsPage() {
+  const router = useRouter()
+  const { user } = useAuth()
+  const { theme, setTheme } = useTheme()
+
   const [notifications, setNotifications] = useState(true)
   const [aiSummary, setAiSummary] = useState(true)
   const [dataBackup, setDataBackup] = useState(true)
+  const [showProfileCard, setShowProfileCard] = useState(true)
+  const [photoUrl, setPhotoUrl] = useState("")
+  const [actionError, setActionError] = useState("")
+  const [actionSuccess, setActionSuccess] = useState("")
+  const [isSavingPhoto, setIsSavingPhoto] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+  const [isSigningOut, setIsSigningOut] = useState(false)
+
+  useEffect(() => {
+    if (user?.photoURL) {
+      setPhotoUrl(user.photoURL)
+    }
+
+    const stored = localStorage.getItem("showProfileCard")
+    if (stored === "false") {
+      setShowProfileCard(false)
+    }
+  }, [user?.photoURL])
+
+  useEffect(() => {
+    if (!actionSuccess) return
+    const timer = window.setTimeout(() => setActionSuccess(""), 2500)
+    return () => window.clearTimeout(timer)
+  }, [actionSuccess])
+
+  const persistShowProfileCard = (value: boolean) => {
+    setShowProfileCard(value)
+    localStorage.setItem("showProfileCard", value ? "true" : "false")
+  }
+
+  const handleSavePhoto = async () => {
+    if (!auth.currentUser) {
+      setActionError("User not authenticated")
+      return
+    }
+
+    setIsSavingPhoto(true)
+    setActionError("")
+    setActionSuccess("")
+    try {
+      await updateProfile(auth.currentUser, { photoURL: photoUrl.trim() || null })
+      setActionSuccess("Profile picture updated")
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Failed to update profile picture")
+    } finally {
+      setIsSavingPhoto(false)
+    }
+  }
+
+  const handleRemovePhoto = async () => {
+    if (!auth.currentUser) {
+      setActionError("User not authenticated")
+      return
+    }
+
+    setIsSavingPhoto(true)
+    setActionError("")
+    setActionSuccess("")
+    try {
+      await updateProfile(auth.currentUser, { photoURL: null })
+      setPhotoUrl("")
+      setActionSuccess("Profile picture removed")
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Failed to remove profile picture")
+    } finally {
+      setIsSavingPhoto(false)
+    }
+  }
+
+  const handleExportMemories = async () => {
+    setIsExporting(true)
+    setActionError("")
+    setActionSuccess("")
+    try {
+      const memories = await api.getMemories()
+      const content = JSON.stringify(memories, null, 2)
+      const blob = new Blob([content], { type: "application/json" })
+      const url = window.URL.createObjectURL(blob)
+      const anchor = document.createElement("a")
+      anchor.href = url
+      anchor.download = `memoryjar-export-${new Date().toISOString().slice(0, 10)}.json`
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      window.URL.revokeObjectURL(url)
+      setActionSuccess("Memories exported successfully")
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Failed to export memories")
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true)
+    setActionError("")
+    setActionSuccess("")
+    try {
+      setActionSuccess("Signed out successfully")
+      await new Promise((resolve) => setTimeout(resolve, 600))
+      await signOut(auth)
+      router.push("/login")
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Failed to sign out")
+    } finally {
+      setIsSigningOut(false)
+    }
+  }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-24">
+    <main className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 pb-24">
       {/* Background gradient orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl"></div>
@@ -29,6 +148,83 @@ export default function SettingsPage() {
           </Link>
           <h1 className="text-3xl font-bold">Settings</h1>
         </div>
+
+        {actionError && (
+          <Card className="glass border-destructive/30 p-4">
+            <p className="text-sm text-destructive">{actionError}</p>
+          </Card>
+        )}
+
+        {actionSuccess && (
+          <Card className="glass border-green-500/30 p-4">
+            <p className="text-sm text-green-600 dark:text-green-400">{actionSuccess}</p>
+          </Card>
+        )}
+
+        <Card className="glass border-primary/20 p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <UserCircle2 className="w-5 h-5 text-primary" />
+            <h2 className="text-sm font-semibold">Profile</h2>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Profile Picture URL</p>
+            <Input value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} placeholder="https://..." />
+            <div className="flex gap-2">
+              <Button onClick={handleSavePhoto} disabled={isSavingPhoto} className="flex-1">
+                {isSavingPhoto ? "Saving..." : "Update Picture"}
+              </Button>
+              <Button
+                onClick={handleRemovePhoto}
+                disabled={isSavingPhoto}
+                variant="outline"
+                className="flex-1 border-primary/30 hover:bg-primary/5 bg-transparent"
+              >
+                Remove Picture
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Show Profile Card</p>
+              <p className="text-xs text-muted-foreground">Enable or remove the profile card on profile page</p>
+            </div>
+            <button
+              onClick={() => persistShowProfileCard(!showProfileCard)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                showProfileCard ? "bg-primary" : "bg-muted"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  showProfileCard ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+        </Card>
+
+        <Card className="glass border-primary/20 p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <Sun className="w-5 h-5 text-primary" />
+            <h2 className="text-sm font-semibold">Theme</h2>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {(["light", "dark", "auto"] as const).map((themeOption) => (
+              <Button
+                key={themeOption}
+                onClick={() => setTheme(themeOption)}
+                variant={theme === themeOption ? "default" : "outline"}
+                className={theme === themeOption ? "" : "border-primary/30 hover:bg-primary/5 bg-transparent"}
+              >
+                {themeOption === "light" && <Sun className="w-4 h-4 mr-1" />}
+                {themeOption === "dark" && <Moon className="w-4 h-4 mr-1" />}
+                {themeOption === "auto" ? "Auto" : themeOption[0].toUpperCase() + themeOption.slice(1)}
+              </Button>
+            ))}
+          </div>
+        </Card>
 
         {/* Notifications */}
         <Card className="glass border-primary/20 p-6 space-y-4">
@@ -130,11 +326,23 @@ export default function SettingsPage() {
             <h2 className="text-sm font-semibold">Data Management</h2>
           </div>
           <div className="space-y-2">
-            <Button variant="outline" className="w-full border-primary/30 hover:bg-primary/5 bg-transparent text-sm">
-              Download My Data
+            <Button
+              onClick={handleExportMemories}
+              disabled={isExporting}
+              variant="outline"
+              className="w-full border-primary/30 hover:bg-primary/5 bg-transparent text-sm"
+            >
+              <Download size={14} className="mr-2" />
+              {isExporting ? "Exporting..." : "Export Memories"}
             </Button>
-            <Button variant="outline" className="w-full border-primary/30 hover:bg-primary/5 bg-transparent text-sm">
-              Clear Cache
+            <Button
+              onClick={handleSignOut}
+              disabled={isSigningOut}
+              variant="outline"
+              className="w-full border-destructive/30 hover:bg-destructive/5 bg-transparent text-sm text-destructive hover:text-destructive"
+            >
+              <LogOut size={14} className="mr-2" />
+              {isSigningOut ? "Signing Out..." : "Sign Out"}
             </Button>
           </div>
         </Card>
