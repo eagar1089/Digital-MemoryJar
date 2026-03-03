@@ -1,16 +1,17 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Plus, BarChart3, User } from "lucide-react"
+import { Home, Plus, Gauge, BarChart3, User } from "lucide-react"
 import { Tooltip } from "./tooltip"
 
 export function FloatingNav() {
   const pathname = usePathname()
 
   const navItems = [
-    { href: "/", icon: Home, label: "Home" },
+    { href: "/home", icon: Home, label: "Home" },
+    { href: "/dashboard", icon: Gauge, label: "Dashboard" },
     { href: "/add", icon: Plus, label: "Add Memory" },
-    { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
+    { href: "/analytics", icon: BarChart3, label: "Analytics" },
     { href: "/profile", icon: User, label: "Profile" },
   ]
 
@@ -39,7 +40,7 @@ export function FloatingNav() {
                     href={item.href}
                     className={`transition-all duration-300 flex items-center gap-2 rounded-full whitespace-nowrap ${
                       isActive
-                        ? "bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-500 dark:to-blue-500 text-white px-4 py-2 shadow-lg shadow-purple-500/40"
+                        ? "bg-linear-to-r from-purple-600 to-blue-600 dark:from-purple-500 dark:to-blue-500 text-white px-4 py-2 shadow-lg shadow-purple-500/40"
                         : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-2 py-2 hover:scale-110"
                     }`}
                   >

@@ -1,27 +1,41 @@
 "use client"
-import { useState } from "react"
+
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Edit2, Trash2, Share2 } from "lucide-react"
+import { api, type Memory } from "@/lib/api-client"
 
 export default function MemoryDetailPage({ params }: { params: { id: string } }) {
   const [isEditing, setIsEditing] = useState(false)
+  const [memory, setMemory] = useState<Memory | null>(null)
+  const [error, setError] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
+  const [draftContent, setDraftContent] = useState("")
+  const [draftSummary, setDraftSummary] = useState("")
+  const [draftMood, setDraftMood] = useState("")
+  const [draftTags, setDraftTags] = useState("")
 
-  // Mock data
-  const memory = {
-    id: params.id,
-    date: "Today at 2:30 PM",
-    fullDate: "October 16, 2025",
-    title: "Productive Day at Work",
-    content:
-      "Had a really productive day at work today. I managed to complete the project milestone that we've been working on for the past two weeks. The team was supportive and collaborative, which made the process smooth. I felt a sense of accomplishment and pride in what we achieved together. Looking forward to the next phase of the project.",
-    summary: "Had a productive day at work. Completed the project milestone and felt accomplished.",
-    mood: "happy",
-    tags: ["work", "achievement", "productivity", "teamwork"],
-    aiInsight:
-      "Your entry shows strong positive emotions around achievement and collaboration. You tend to feel most fulfilled when working with supportive teams on meaningful projects.",
-  }
+  useEffect(() => {
+    async function loadMemory() {
+      try {
+        const memoryRes = await api.getMemory(params.id)
+        setMemory(memoryRes)
+        setDraftContent(memoryRes.content || "")
+        setDraftSummary(memoryRes.ai_summary || "")
+        setDraftMood(memoryRes.mood || "")
+        setDraftTags((memoryRes.tags || []).join(", "))
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to load memory"
+        setError(message)
+      }
+    }
+
+    loadMemory()
+  }, [params.id])
 
   const moodEmojis: Record<string, string> = {
     happy: "😊",
@@ -30,18 +44,62 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
     peaceful: "🌙",
     excited: "🎉",
     grateful: "🙏",
+    neutral: "📝",
+  }
+
+  const aiInsight = useMemo(() => {
+    if (!memory?.nlp_insights) {
+      return "No AI insight available yet."
+    }
+
+    const topics = memory.nlp_insights.topics || []
+    if (topics.length) {
+      return `Primary topics detected: ${topics.join(", ")}.`
+    }
+
+    return "NLP processed this memory, but no strong topic signal was found."
+  }, [memory])
+
+  async function handleSaveChanges() {
+    if (!memory) return
+
+    setIsSaving(true)
+    setError("")
+    try {
+      const tags = draftTags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+
+      const updated = await api.updateMemory(memory.id, {
+        content: draftContent,
+        ai_summary: draftSummary,
+        mood: draftMood || undefined,
+        tags,
+      })
+
+      setMemory(updated)
+      setDraftContent(updated.content || "")
+      setDraftSummary(updated.ai_summary || "")
+      setDraftMood(updated.mood || "")
+      setDraftTags((updated.tags || []).join(", "))
+      setIsEditing(false)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to update memory"
+      setError(message)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-24">
-      {/* Background gradient orbs */}
+    <main className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 pb-24">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-20 right-10 w-72 h-72 bg-accent/10 rounded-full blur-3xl"></div>
       </div>
 
       <div className="relative z-10 max-w-md mx-auto px-4 py-8 space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <Link
             href="/timeline"
@@ -54,7 +112,15 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => setIsEditing(!isEditing)}
+              onClick={() => {
+                if (!isEditing && memory) {
+                  setDraftContent(memory.content || "")
+                  setDraftSummary(memory.ai_summary || "")
+                  setDraftMood(memory.mood || "")
+                  setDraftTags((memory.tags || []).join(", "))
+                }
+                setIsEditing(!isEditing)
+              }}
               className="text-muted-foreground hover:text-foreground"
             >
               <Edit2 size={16} />
@@ -65,53 +131,101 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
           </div>
         </div>
 
-        {/* Memory content */}
-        <Card className="glass border-primary/20 p-6 space-y-4">
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">{memory.fullDate}</p>
-              <h1 className="text-2xl font-bold">{memory.title}</h1>
-            </div>
-            <span className="text-4xl">{moodEmojis[memory.mood]}</span>
-          </div>
+        {error && (
+          <Card className="glass border-destructive/30 p-4">
+            <p className="text-sm text-destructive">{error}</p>
+          </Card>
+        )}
 
-          <div className="prose prose-sm max-w-none">
-            <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">{memory.content}</p>
-          </div>
-        </Card>
+        {!error && !memory && (
+          <Card className="glass border-primary/20 p-4">
+            <p className="text-sm text-muted-foreground">Loading memory...</p>
+          </Card>
+        )}
 
-        {/* AI Summary */}
-        <Card className="glass border-primary/20 p-4 space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase">AI Summary</p>
-          <p className="text-sm">{memory.summary}</p>
-        </Card>
+        {memory && (
+          <>
+            <Card className="glass border-primary/20 p-6 space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">{new Date(memory.created_at).toLocaleDateString()}</p>
+                  <h1 className="text-2xl font-bold">Memory Detail</h1>
+                </div>
+                <span className="text-4xl">{moodEmojis[memory.mood || "neutral"] || "📝"}</span>
+              </div>
 
-        {/* AI Insight */}
-        <Card className="glass border-accent/20 bg-accent/5 p-4 space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase">AI Insight</p>
-          <p className="text-sm">{memory.aiInsight}</p>
-        </Card>
+              {isEditing ? (
+                <Textarea
+                  value={draftContent}
+                  onChange={(e) => setDraftContent(e.target.value)}
+                  className="min-h-28"
+                />
+              ) : (
+                <div className="prose prose-sm max-w-none">
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">{memory.content}</p>
+                </div>
+              )}
+            </Card>
 
-        {/* Tags */}
-        <Card className="glass border-primary/20 p-4 space-y-3">
-          <p className="text-xs font-semibold text-muted-foreground uppercase">Tags</p>
-          <div className="flex flex-wrap gap-2">
-            {memory.tags.map((tag) => (
-              <span key={tag} className="px-3 py-1 bg-primary/10 text-primary text-xs rounded-full">
-                {tag}
-              </span>
-            ))}
-          </div>
-        </Card>
+            <Card className="glass border-primary/20 p-4 space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase">AI Summary</p>
+              {isEditing ? (
+                <Textarea
+                  value={draftSummary}
+                  onChange={(e) => setDraftSummary(e.target.value)}
+                  className="min-h-20"
+                />
+              ) : (
+                <p className="text-sm">{memory.ai_summary || "No summary generated yet."}</p>
+              )}
+            </Card>
 
-        {/* Action buttons */}
+            {isEditing && (
+              <Card className="glass border-primary/20 p-4 space-y-3">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Mood</p>
+                  <Input value={draftMood} onChange={(e) => setDraftMood(e.target.value)} placeholder="e.g. calm" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Tags (comma separated)</p>
+                  <Input value={draftTags} onChange={(e) => setDraftTags(e.target.value)} placeholder="work, growth" />
+                </div>
+              </Card>
+            )}
+
+            <Card className="glass border-accent/20 bg-accent/5 p-4 space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase">AI Insight</p>
+              <p className="text-sm">{aiInsight}</p>
+            </Card>
+
+            <Card className="glass border-primary/20 p-4 space-y-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase">Tags</p>
+              <div className="flex flex-wrap gap-2">
+                {(memory.tags || []).length > 0 ? (
+                  (memory.tags || []).map((tag) => (
+                    <span key={tag} className="px-3 py-1 bg-primary/10 text-primary text-xs rounded-full">
+                      {tag}
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-xs text-muted-foreground">No tags available.</p>
+                )}
+              </div>
+            </Card>
+          </>
+        )}
+
         <div className="flex gap-3 pt-4">
           <Button variant="outline" className="flex-1 border-primary/30 hover:bg-primary/5 bg-transparent">
             <Share2 size={16} className="mr-2" />
             Share
           </Button>
-          <Button className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground glow-primary">
-            Save Changes
+          <Button
+            onClick={isEditing ? handleSaveChanges : () => setIsEditing(true)}
+            disabled={isSaving}
+            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground glow-primary"
+          >
+            {isSaving ? "Saving..." : isEditing ? "Save Changes" : "Edit Memory"}
           </Button>
         </div>
       </div>

@@ -3,7 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 import logging
+import os
+from pathlib import Path
 
+# Load environment variables from .env before importing modules that depend on them
+load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
+load_dotenv()
 
 from backend.routers import auth, memories, dashboard
 from backend.nlp_processor import process_unprocessed_memories
@@ -12,15 +17,20 @@ from backend.nlp_processor import process_unprocessed_memories
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load environment variables from .env
-load_dotenv()
-
 app = FastAPI(title="DMJ Backend")
 
-# Allow local dev frontend to call the API; lock this down in production
+# Allow local dev frontend to call the API on any local port.
+# You can override with CORS_ALLOW_ORIGINS="http://localhost:3000,http://127.0.0.1:3001"
+configured_origins = [
+    origin.strip()
+    for origin in os.getenv("CORS_ALLOW_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000","http://localhost:3001","http://127.0.0.1:3000","http://127.0.0.1:3001"],
+    allow_origins=configured_origins,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

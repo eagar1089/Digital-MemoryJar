@@ -5,6 +5,15 @@ from bson.objectid import ObjectId
 from backend.connection import get_collection
 
 
+def _safe_round(value, digits: int = 3) -> float:
+    try:
+        if value is None:
+            return 0.0
+        return round(float(value), digits)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def create_memory(data: dict) -> str:
     col = get_collection("memories")
     
@@ -53,6 +62,20 @@ def get_memory_by_id(memory_id: str) -> Optional[dict]:
         return doc
     except Exception:
         return None
+
+
+def update_memory_by_id(memory_id: str, updates: dict) -> bool:
+    """Update editable memory fields by ID."""
+    col = get_collection("memories")
+    try:
+        updates["updated_at"] = datetime.utcnow()
+        result = col.update_one(
+            {"_id": ObjectId(memory_id)},
+            {"$set": updates}
+        )
+        return result.modified_count > 0
+    except Exception:
+        return False
 
 
 def update_memory_with_nlp(memory_id: str, nlp_data: dict) -> bool:
@@ -109,12 +132,12 @@ def get_stats() -> dict:
     if emotion_agg:
         e = emotion_agg[0]
         top_emotions = {
-            "joy": round(e.get("joy_avg", 0), 3),
-            "sadness": round(e.get("sadness_avg", 0), 3),
-            "anger": round(e.get("anger_avg", 0), 3),
-            "fear": round(e.get("fear_avg", 0), 3),
-            "surprise": round(e.get("surprise_avg", 0), 3),
-            "disgust": round(e.get("disgust_avg", 0), 3),
+            "joy": _safe_round(e.get("joy_avg")),
+            "sadness": _safe_round(e.get("sadness_avg")),
+            "anger": _safe_round(e.get("anger_avg")),
+            "fear": _safe_round(e.get("fear_avg")),
+            "surprise": _safe_round(e.get("surprise_avg")),
+            "disgust": _safe_round(e.get("disgust_avg")),
         }
     
     # Get top topics

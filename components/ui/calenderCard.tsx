@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,10 +14,13 @@ const events: Record<string, string> = {
 }
 
 export default function CalendarCard() {
+  const router = useRouter()
   const today = new Date()
 
   const [current, setCurrent] = useState(() => new Date(today))
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<"week" | "month">("week")
+  const [selectedDate, setSelectedDate] = useState(() => new Date(today))
 
   const year = current.getFullYear()
   const month = current.getMonth()
@@ -39,6 +43,29 @@ export default function CalendarCard() {
     }
   }, [year, month])
 
+  const weekDates = useMemo(() => {
+    const start = new Date(selectedDate)
+    const dayIndex = (start.getDay() + 6) % 7
+    start.setDate(start.getDate() - dayIndex)
+
+    const list: Date[] = []
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start)
+      d.setDate(start.getDate() + i)
+      list.push(d)
+    }
+    return list
+  }, [selectedDate])
+
+  function toDateKey(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+  }
+
+  function selectDate(date: Date) {
+    setSelectedDate(date)
+    router.push(`/timeline?date=${toDateKey(date)}`)
+  }
+
   function changeMonth(dir: number) {
     const next = new Date(year, month + dir, 1)
     if (next > today) return
@@ -47,6 +74,7 @@ export default function CalendarCard() {
 
   function jumpTo(date: Date) {
     setCurrent(date)
+    setSelectedDate(date)
   }
 
   return (
@@ -76,6 +104,17 @@ export default function CalendarCard() {
       </CardHeader>
 
       <CardContent>
+        <div className="mb-3 flex items-center justify-end">
+          <select
+            value={viewMode}
+            onChange={(e) => setViewMode(e.target.value as "week" | "month")}
+            className="rounded-md border bg-background px-2 py-1 text-xs"
+          >
+            <option value="week">Week view (Mon-Sun)</option>
+            <option value="month">Full month</option>
+          </select>
+        </div>
+
         {pickerOpen && (
           <div className="mb-4 flex items-center justify-center gap-2">
             <select
@@ -125,49 +164,94 @@ export default function CalendarCard() {
           </div>
         )}
 
-        <div className="grid grid-cols-7 text-center text-xs text-muted-foreground mb-2">
-          {["S", "M", "T", "W", "T", "F", "S"].map(d => (
-            <div key={d}>{d}</div>
-          ))}
-        </div>
+        {viewMode === "month" ? (
+          <>
+            <div className="grid grid-cols-7 text-center text-xs text-muted-foreground mb-2">
+              {["S", "M", "T", "W", "T", "F", "S"].map(d => (
+                <div key={d}>{d}</div>
+              ))}
+            </div>
 
-        <motion.div
-          key={monthYear}
-          initial={{ x: 40, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.25 }}
-          className="grid grid-cols-7 gap-2"
-        >
-          {days.map((day, idx) => {
-            if (!day) return <div key={idx} />
+            <motion.div
+              key={monthYear}
+              initial={{ x: 40, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.25 }}
+              className="grid grid-cols-7 gap-2"
+            >
+              {days.map((day, idx) => {
+                if (!day) return <div key={idx} />
 
-            const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-            const isToday = key === todayKey
+                const dateObj = new Date(year, month, day)
+                const key = toDateKey(dateObj)
+                const isToday = key === todayKey
+                const isSelected = key === toDateKey(selectedDate)
 
-            return (
-              <motion.div key={idx} whileTap={{ scale: 0.9 }} className="relative">
-                <motion.div
-                  animate={isToday ? { scale: [1, 1.08, 1] } : undefined}
-                  transition={isToday ? { repeat: Infinity, duration: 1.6 } : undefined}
+                return (
+                  <motion.button
+                    type="button"
+                    key={idx}
+                    whileTap={{ scale: 0.9 }}
+                    className="relative"
+                    onClick={() => selectDate(dateObj)}
+                  >
+                    <motion.div
+                      animate={isToday ? { scale: [1, 1.08, 1] } : undefined}
+                      transition={isToday ? { repeat: Infinity, duration: 1.6 } : undefined}
+                      className={
+                        "aspect-square flex items-center justify-center rounded-lg text-sm " +
+                        (isSelected
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : "hover:bg-accent hover:text-accent-foreground")
+                      }
+                    >
+                      {day}
+                    </motion.div>
+
+                    {events[key] && (
+                      <span
+                        className={`absolute bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full ${events[key]}`}
+                      />
+                    )}
+                  </motion.button>
+                )
+              })}
+            </motion.div>
+          </>
+        ) : (
+          <>
+            <div className="grid grid-cols-7 text-center text-xs text-muted-foreground mb-2">
+              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+                <div key={day}>{day}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-2">
+            {weekDates.map((dateObj) => {
+              const key = toDateKey(dateObj)
+              const isSelected = key === toDateKey(selectedDate)
+              const isFuture = dateObj > today
+              return (
+                <button
+                  type="button"
+                  key={key}
+                  onClick={() => !isFuture && selectDate(dateObj)}
+                  disabled={isFuture}
                   className={
-                    "aspect-square flex items-center justify-center rounded-lg text-sm " +
-                    (isToday
-                      ? "bg-primary text-primary-foreground shadow-md"
-                      : "hover:bg-accent hover:text-accent-foreground")
+                    "rounded-lg px-2 py-2 text-center text-xs border transition-colors " +
+                    (isFuture
+                      ? "opacity-50 border-border cursor-not-allowed"
+                      : isSelected
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "hover:bg-accent border-border")
                   }
                 >
-                  {day}
-                </motion.div>
-
-                {events[key] && (
-                  <span
-                    className={`absolute bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full ${events[key]}`}
-                  />
-                )}
-              </motion.div>
-            )
-          })}
-        </motion.div>
+                  <p className="font-semibold">{dateObj.getDate()}</p>
+                </button>
+              )
+            })}
+            </div>
+          </>
+        )}
 
         <div className="mt-4 flex justify-center gap-2">
           <Button size="sm" variant="outline" onClick={() => jumpTo(new Date())}>
