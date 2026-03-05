@@ -43,16 +43,20 @@ def _initialize_firebase_admin() -> None:
 
     cert_data = _build_firebase_cert_from_env()
     if cert_data:
-        cred = credentials.Certificate(cert_data)
-        firebase_admin.initialize_app(
-            cred,
-            {
-                "projectId": cert_data["project_id"],
-            },
-        )
-        os.environ.setdefault("GOOGLE_CLOUD_PROJECT", cert_data["project_id"])
-        logger.info("Firebase Admin initialized from FIREBASE_* env vars (projectId=%s)", cert_data["project_id"])
-        return
+        try:
+            cred = credentials.Certificate(cert_data)
+            firebase_admin.initialize_app(
+                cred,
+                {
+                    "projectId": cert_data["project_id"],
+                },
+            )
+            os.environ.setdefault("GOOGLE_CLOUD_PROJECT", cert_data["project_id"])
+            logger.info("Firebase Admin initialized from FIREBASE_* env vars (projectId=%s)", cert_data["project_id"])
+            return
+        except Exception as exc:
+            logger.exception("Failed to initialize Firebase from FIREBASE_* env vars: %s", exc)
+            logger.warning("Falling back to default application credentials")
 
     firebase_admin.initialize_app()
     logger.info("Firebase Admin initialized using default application credentials")
