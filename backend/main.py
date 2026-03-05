@@ -42,6 +42,16 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/")
+def root():
+    return {
+        "service": "DMJ Backend",
+        "status": "ok",
+        "health": "/healthz",
+        "docs": "/docs",
+    }
+
+
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(memories.router, prefix="/memories", tags=["memories"])
 app.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
