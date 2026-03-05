@@ -4,13 +4,12 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { ArrowLeft, Bell, Lock, Database, Eye, Download, LogOut, Sun, Moon, UserCircle2 } from "lucide-react"
 import { api } from "@/lib/api-client"
 import { useTheme } from "@/lib/theme-provider"
 import { useAuth } from "@/lib/auth-context"
 import { auth } from "@/lib/firebase"
-import { signOut, updateProfile } from "firebase/auth"
+import { signOut } from "firebase/auth"
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -21,23 +20,17 @@ export default function SettingsPage() {
   const [aiSummary, setAiSummary] = useState(true)
   const [dataBackup, setDataBackup] = useState(true)
   const [showProfileCard, setShowProfileCard] = useState(true)
-  const [photoUrl, setPhotoUrl] = useState("")
   const [actionError, setActionError] = useState("")
   const [actionSuccess, setActionSuccess] = useState("")
-  const [isSavingPhoto, setIsSavingPhoto] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
 
   useEffect(() => {
-    if (user?.photoURL) {
-      setPhotoUrl(user.photoURL)
-    }
-
     const stored = localStorage.getItem("showProfileCard")
     if (stored === "false") {
       setShowProfileCard(false)
     }
-  }, [user?.photoURL])
+  }, [])
 
   useEffect(() => {
     if (!actionSuccess) return
@@ -50,44 +43,9 @@ export default function SettingsPage() {
     localStorage.setItem("showProfileCard", value ? "true" : "false")
   }
 
-  const handleSavePhoto = async () => {
-    if (!auth.currentUser) {
-      setActionError("User not authenticated")
-      return
-    }
-
-    setIsSavingPhoto(true)
-    setActionError("")
-    setActionSuccess("")
-    try {
-      await updateProfile(auth.currentUser, { photoURL: photoUrl.trim() || null })
-      setActionSuccess("Profile picture updated")
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Failed to update profile picture")
-    } finally {
-      setIsSavingPhoto(false)
-    }
-  }
-
-  const handleRemovePhoto = async () => {
-    if (!auth.currentUser) {
-      setActionError("User not authenticated")
-      return
-    }
-
-    setIsSavingPhoto(true)
-    setActionError("")
-    setActionSuccess("")
-    try {
-      await updateProfile(auth.currentUser, { photoURL: null })
-      setPhotoUrl("")
-      setActionSuccess("Profile picture removed")
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Failed to remove profile picture")
-    } finally {
-      setIsSavingPhoto(false)
-    }
-  }
+  const accountAvatar =
+    user?.photoURL ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.email || "User")}&background=0D8ABC&color=fff&rounded=true`
 
   const handleExportMemories = async () => {
     setIsExporting(true)
@@ -167,21 +125,11 @@ export default function SettingsPage() {
             <h2 className="text-sm font-semibold">Profile</h2>
           </div>
 
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Profile Picture URL</p>
-            <Input value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} placeholder="https://..." />
-            <div className="flex gap-2">
-              <Button onClick={handleSavePhoto} disabled={isSavingPhoto} className="flex-1">
-                {isSavingPhoto ? "Saving..." : "Update Picture"}
-              </Button>
-              <Button
-                onClick={handleRemovePhoto}
-                disabled={isSavingPhoto}
-                variant="outline"
-                className="flex-1 border-primary/30 hover:bg-primary/5 bg-transparent"
-              >
-                Remove Picture
-              </Button>
+          <div className="flex items-center gap-3">
+            <img src={accountAvatar} alt="Account avatar" className="w-12 h-12 rounded-full object-cover border border-primary/20" />
+            <div>
+              <p className="text-sm font-medium">Profile picture is managed by your email account</p>
+              <p className="text-xs text-muted-foreground">Custom profile updates are disabled.</p>
             </div>
           </div>
 

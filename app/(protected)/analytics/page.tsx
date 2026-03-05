@@ -24,6 +24,7 @@ export default function DashboardPage() {
   const [memories, setMemories] = useState<Memory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isMonthlyView, setIsMonthlyView] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -78,7 +79,7 @@ export default function DashboardPage() {
       .map(([word]) => word)
   }, [memories])
 
-  const moodData = useMemo(() => {
+  const weeklyMoodData = useMemo(() => {
     const dayMap = new Map<string, number>()
     for (const memory of memories) {
       const date = memory.created_at ? new Date(memory.created_at) : null
@@ -92,6 +93,35 @@ export default function DashboardPage() {
       memories: dayMap.get(day) || 0,
     }))
   }, [memories])
+
+  const monthlyMoodData = useMemo(() => {
+    const now = new Date()
+    const weekMap = new Map<string, number>()
+    
+    for (const memory of memories) {
+      const date = memory.created_at ? new Date(memory.created_at) : null
+      if (!date || Number.isNaN(date.getTime())) continue
+      
+      const daysDiff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+      
+      if (daysDiff < 7) {
+        weekMap.set("Week 4", (weekMap.get("Week 4") || 0) + 1)
+      } else if (daysDiff < 14) {
+        weekMap.set("Week 3", (weekMap.get("Week 3") || 0) + 1)
+      } else if (daysDiff < 21) {
+        weekMap.set("Week 2", (weekMap.get("Week 2") || 0) + 1)
+      } else if (daysDiff < 28) {
+        weekMap.set("Week 1", (weekMap.get("Week 1") || 0) + 1)
+      }
+    }
+
+    return ["Week 1", "Week 2", "Week 3", "Week 4"].map((week) => ({
+      day: week,
+      memories: weekMap.get(week) || 0,
+    }))
+  }, [memories])
+
+  const moodData = isMonthlyView ? monthlyMoodData : weeklyMoodData
 
   const insights = useMemo(() => {
     const items: string[] = []
@@ -151,7 +181,24 @@ export default function DashboardPage() {
 
         {/* Mood trend chart */}
         <Card className="glass-gradient-secondary border-0 p-6 space-y-4">
-          <h2 className="text-sm font-semibold">Mood Trend</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Mood Trend</h2>
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                {isMonthlyView ? "Monthly" : "Weekly"}
+              </span>
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={isMonthlyView}
+                  onChange={(e) => setIsMonthlyView(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-muted rounded-full peer-checked:bg-primary transition-colors duration-200 border border-primary/20"></div>
+                <div className="absolute left-1 top-1 w-4 h-4 bg-white dark:bg-background rounded-full transition-transform duration-200 peer-checked:translate-x-5 shadow-sm"></div>
+              </div>
+            </label>
+          </div>
           <div className="w-full h-48 -mx-2">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={moodData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>

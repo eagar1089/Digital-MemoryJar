@@ -22,8 +22,8 @@ try:
     SPACY_AVAILABLE = True
 except ImportError:
     SPACY_AVAILABLE = False
-    logging.warning("**************************************spaCy not installed. Install with: pip install spacy**************************************")
-    logging.warning("**************************************Then download model: python -m spacy download en_core_web_sm**************************************")
+    logging.info("spaCy not installed - using lightweight regex-based preprocessing")
+    Language = None
 
 from backend.connection import get_collection
 
@@ -76,9 +76,37 @@ class TextPreprocessor:
     # Complete text preprocessing pipeline
     
     def __init__(self):
-        """Initialize preprocessor with spaCy pipeline."""
-        self.nlp = load_nlp_pipeline()
-        self.stop_words = self.nlp.Defaults.stop_words
+        """Initialize preprocessor with spaCy pipeline if available, else use lightweight mode."""
+        if SPACY_AVAILABLE:
+            try:
+                self.nlp = load_nlp_pipeline()
+                self.stop_words = self.nlp.Defaults.stop_words
+                self.use_spacy = True
+                logger.info("TextPreprocessor initialized with spaCy")
+            except Exception as e:
+                logger.warning(f"Failed to load spaCy: {e}. Using lightweight mode.")
+                self.nlp = None
+                self.stop_words = self._get_basic_stopwords()
+                self.use_spacy = False
+        else:
+            self.nlp = None
+            self.stop_words = self._get_basic_stopwords()
+            self.use_spacy = False
+            logger.info("TextPreprocessor initialized without spaCy (lightweight mode)")
+    
+    def _get_basic_stopwords(self) -> set:
+        """Basic English stopwords for lightweight mode."""
+        return {
+            'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 'yours',
+            'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', 'her', 'hers',
+            'herself', 'it', 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves',
+            'what', 'which', 'who', 'whom', 'this', 'that', 'these', 'those', 'am', 'is', 'are',
+            'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does',
+            'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until',
+            'while', 'of', 'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into',
+            'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down',
+            'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once'
+        }
     
     def normalize_text(self, text: str) -> str:
         """
@@ -112,6 +140,13 @@ class TextPreprocessor:
     def tokenize_and_analyze(self, text: str) -> Tuple[List[str], List[Tuple[str, str]]]:
         if not text:
             return [], []
+        
+        if not self.use_spacy:
+            # Lightweight tokenization without spaCy
+            tokens = re.findall(r'\b\w+\b', text.lower())
+            pos_tags = [(token, "NOUN") for token in tokens]  # Simplified POS
+            return tokens, pos_tags
+        
         doc = self.nlp(text)
         tokens = [token.text for token in doc]
         pos_tags = [(token.text, token.pos_) for token in doc]
@@ -125,6 +160,30 @@ class TextPreprocessor:
     def lemmatize_and_clean(self, text: str, remove_stopwords: bool = True,remove_punctuation: bool = True) -> Tuple[str, Dict]:
         if not text:
             return "", {}
+        
+        if not self.use_spacy:
+            # Lightweight lemmatization without spaCy
+            tokens = re.findall(r'\b\w+\b', text.lower())
+            lemmas = []
+            removed_stopwords = 0
+            
+            for token in tokens:
+                if remove_stopwords and token in self.stop_words:
+                    removed_stopwords += 1
+                    continue
+                if len(token) >= 2:
+                    lemmas.append(token)
+            
+            cleaned_text = ' '.join(lemmas)
+            metadata = {
+                "original_token_count": len(tokens),
+                "cleaned_token_count": len(lemmas),
+                "removed_stopwords": removed_stopwords,
+                "pos_distribution": {},
+                "compression_ratio": round(len(lemmas) / len(tokens), 2) if tokens else 0,
+            }
+            return cleaned_text, metadata
+        
         doc = self.nlp(text)
         
         lemmas = []
@@ -176,6 +235,16 @@ class TextPreprocessor:
         """
         if not text:
             return []
+        
+        if not self.use_spacy:
+            # Lightweight keyword extraction without spaCy
+            tokens = re.findall(r'\b\w{3,}\b', text.lower())
+            # Filter stopwords
+            keywords = [t for t in tokens if t not in self.stop_words]
+            # Count frequency
+            from collections import Counter
+            keyword_freq = Counter(keywords)
+            return [kw for kw, _ in keyword_freq.most_common(top_n)]
         
         doc = self.nlp(text)
         
