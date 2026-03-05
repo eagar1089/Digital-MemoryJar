@@ -40,7 +40,6 @@ export default function SignupPage() {
         name,
         email,
         createdAt: new Date(),
-        profilePicture: null,
       })
 
       router.push("/home")
@@ -63,7 +62,6 @@ export default function SignupPage() {
         name: user.displayName || "User",
         email: user.email,
         createdAt: new Date(),
-        profilePicture: user.photoURL,
       })
 
       router.push("/home")

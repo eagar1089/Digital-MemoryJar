@@ -68,15 +68,8 @@ def _hf_inference_endpoints(model_id: str) -> List[str]:
 # Keyword extraction with KeyBERT (cached model)
 # ----------------------------------------------------------------------
 
-@lru_cache(maxsize=1)
-def _get_keybert_extractor():
-    """Initialize KeyBERT with a multilingual sentence-transformer once."""
-    from keybert import KeyBERT
-    from sentence_transformers import SentenceTransformer
-    embedding_model = SentenceTransformer(
-        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-    )
-    return KeyBERT(model=embedding_model)
+# Keyword extraction now uses TextPreprocessor (lightweight, no ML models)
+
 def _get_keybert_top_n() -> int:
     """Get number of keywords to extract from env, default 8."""
     value = os.getenv("KEYBERT_TOP_N", "8")
@@ -100,10 +93,7 @@ def _get_keybert_top_n() -> int:
 # ----------------------------------------------------------------------
 # Zero-shot topic classification
 # ----------------------------------------------------------------------
-@lru_cache(maxsize=1)
-def _get_zero_shot_classifier():
-    from transformers import pipeline
-    return pipeline("zero-shot-classification", model="joeddav/xlm-roberta-large-xnli")
+# Zero-shot now uses HF API instead of local transformers
 
 def _get_topic_candidate_labels() -> List[str]:
     # configured = os.getenv("TOPIC_LABELS", "").strip()
@@ -150,23 +140,7 @@ def _get_topic_max_labels() -> int:
 # Named Entity Recognition
 # ----------------------------------------------------------------------
 
-@lru_cache(maxsize=1)
-def _get_hf_ner_pipeline():
-    """Load Hugging Face multilingual NER pipeline."""
-    from transformers import pipeline
-    return pipeline(
-        "token-classification",
-        model="Davlan/bert-base-multilingual-cased-ner-hrl",
-        aggregation_strategy="simple",
-    )
-
-
-@lru_cache(maxsize=1)
-def _get_spacy_ner_model():
-    """Load spaCy multilingual NER model (fallback)."""
-    import spacy
-    return spacy.load("xx_ent_wiki_sm")
-
+# NER disabled for memory optimization on free hosting
 
 def _get_ner_score_threshold() -> float:
     """Minimum confidence for NER entities (optional env)."""
@@ -193,11 +167,7 @@ def _get_ner_score_threshold() -> float:
 # Embedding generation
 # ----------------------------------------------------------------------
 
-@lru_cache(maxsize=1)
-def _get_embedding_model_instance():
-    """Load SentenceTransformer model for multilingual embeddings."""
-    from sentence_transformers import SentenceTransformer
-    return SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+# Embedding generation now uses HF API instead of local SentenceTransformers
 
 
 # ----------------------------------------------------------------------
@@ -403,36 +373,17 @@ def extract_emotion_scores(text: str) -> Dict[str, float]:
 # ----------------------------------------------------------------------
 
 def extract_keywords(text: str) -> List[str]:
-    """Extract keywords using KeyBERT (multilingual) or fallback."""
+    """Extract keywords using TextPreprocessor (lightweight, no ML models)."""
     if not text or not text.strip():
         return []
 
     top_n = _get_keybert_top_n()
 
     try:
-        keybert_extractor = _get_keybert_extractor()
-        scored_keywords = keybert_extractor.extract_keywords(
-            text,
-            keyphrase_ngram_range=(1, 2),
-            stop_words=None,
-            top_n=top_n,
-            use_mmr=True,
-            diversity=0.5,
-        )
-
-        keywords = [phrase.strip() for phrase, _score in scored_keywords if phrase and phrase.strip()]
-        if keywords:
-            return keywords
-    except ImportError as e:
-        logger.warning("KeyBERT dependencies missing (%s). Falling back to TextPreprocessor keywords.", str(e))
-    except Exception as e:
-        logger.error("KeyBERT extraction failed: %s. Falling back to TextPreprocessor keywords.", str(e))
-
-    try:
         preprocessor = TextPreprocessor()
         return preprocessor.extract_keywords(text, top_n=top_n)
     except Exception as e:
-        logger.error("Fallback keyword extraction failed: %s", str(e))
+        logger.error("Keyword extraction failed: %s", str(e))
         return []
 
 
@@ -474,51 +425,238 @@ def categorize_topics(text: str, keywords: List[str]) -> List[str]:
         result = classifier(
             text_for_classification,
             candidate_labels=candidate_labels,
+            # Use HuggingFace API instead of local transformers
+            hf_api_token = os.getenv("HF_API_TOKEN")
+            if not hf_api_token:
+                logger.warning("HF_API_TOKEN missing. Using keyword-based topic classification.")
+                return _fallback_topic_classification(text)
+    
+            hf_timeout = _get_hf_timeout_seconds()
+            model_id = "joeddav/xlm-roberta-large-xnli"
+    
             multi_label=True,
-        )
+                body = json.dumps({
+                    "inputs": text_for_classification,
+                    "parameters": {
+                        "candidate_labels": candidate_labels,
+                        "multi_label": True
+                    },
+                    "options": {"wait_for_model": True}
+                }).encode("utf-8")
+        
+                for endpoint in _hf_inference_endpoints(model_id):
+                    req = request.Request(
+                        endpoint,
+                        data=body,
+                        method="POST",
+                        headers={
+                            "Authorization": f"Bearer {hf_api_token}",
+                            "Content-Type": "application/json",
+                        },
+                    )
+            
+                    try:
+                        with request.urlopen(req, timeout=hf_timeout) as res:
+                            raw_payload = res.read().decode("utf-8")
+                            result = json.loads(raw_payload)
+                
+                        if isinstance(result, dict) and result.get("error"):
+                            logger.warning("HF API error: %s", result.get("error"))
+                            continue
+                
+                        labels = result.get("labels", []) if isinstance(result, dict) else []
+                        scores = result.get("scores", []) if isinstance(result, dict) else []
+                
+                        ranked_topics: List[str] = []
+                        for label, score in zip(labels, scores):
+                            if float(score) >= min_score:
+                                ranked_topics.append(str(label))
+                            if len(ranked_topics) >= max_labels:
+                                break
+                
+                        if ranked_topics:
+                            return ranked_topics
+                        if labels:
+                            return [str(labels[0])]
+                    
+                    except Exception as e:
+                        logger.warning("HF API request failed: %s", str(e))
+                        continue
+        
+            except Exception as e:
+                logger.error("Zero-shot topic classification failed: %s", str(e))
 
-        labels = result.get("labels", []) if isinstance(result, dict) else []
-        scores = result.get("scores", []) if isinstance(result, dict) else []
+            return _fallback_topic_classification(text)
 
-        ranked_topics: List[str] = []
-        for label, score in zip(labels, scores):
+        def _fallback_topic_classification(text: str) -> List[str]:
+            """Fallback keyword-based topic classification."""
+            topics = []
+            work_keywords = ["work", "email", "project", "deliverable", "deadline"]
+            health_keywords = ["walk", "exercise", "sleep", "health", "tired"]
+            mood_keywords = ["grateful", "happy", "sad", "anxious", "stressed"]
+
+            text_lower = text.lower()
+
+            if any(k in text_lower for k in work_keywords):
+                topics.append("Work & Productivity")
+            if any(k in text_lower for k in health_keywords):
+                topics.append("Health & Wellness")
+            if any(k in text_lower for k in mood_keywords):
+                topics.append("Emotions & Mental Health")
+
+            return topics or ["Daily Life"]
+
+        def extract_entities_OLD_DISABLED(text: str) -> List[str]:
+            """OLD VERSION - Extract named entities using multilingual HF NER with spaCy fallback."""
+            if not text or not text.strip():
+                return []
+
+            min_score = _get_ner_score_threshold()
+
+            try:
+                ner_pipeline = _get_hf_ner_pipeline()
+                raw_entities = ner_pipeline(text)
+                entities = []
+
+                for item in raw_entities:
+                    if not isinstance(item, dict):
+                        continue
+                    entity_text = str(item.get("word", "")).strip()
+                    score = item.get("score", 0.0)
+                    try:
+                        score_value = float(score)
+                    except (TypeError, ValueError):
+                        score_value = 0.0
+
+                    if entity_text and score_value >= min_score:
+                        entities.append(entity_text)
+
+                entities = _dedupe_text_items(entities)
+                if entities:
+                    return entities
+            except ImportError as e:
+                logger.warning("Transformers dependency missing for NER (%s).", str(e))
+            except Exception as e:
+                logger.error("Hugging Face NER failed: %s", str(e))
+
+            try:
+                nlp = _get_spacy_ner_model()
+                doc = nlp(text)
+                entities = _dedupe_text_items([ent.text for ent in doc.ents])
+                if entities:
+                    return entities
+            except ImportError as e:
+                logger.warning("spaCy dependency missing for NER fallback (%s).", str(e))
+            except Exception as e:
+                logger.error("spaCy NER fallback failed: %s", str(e))
+
+            return []
+
+        def extract_entities(text: str) -> List[str]:
+            """Extract named entities - disabled for memory optimization."""
+            # NER requires heavy transformers models
+            # Disabled to keep memory usage low on free hosting
+            logger.info("NER disabled for memory optimization")
+            return []
+
+        def generate_embedding_OLD_DISABLED(text: str) -> Dict:
+            """OLD VERSION - Generate multilingual sentence embedding using Sentence Transformers."""
+            model_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+
+            if not text or not text.strip():
             if float(score) >= min_score:
+                    "vector": [],
+                    "model": model_name,
+                }
+
+            try:
+                embedding_model = _get_embedding_model_instance()
+                vector = embedding_model.encode(text, convert_to_tensor=False, normalize_embeddings=True)
+
+                if hasattr(vector, "tolist"):
+                    vector_list = vector.tolist()
+                else:
+                    vector_list = list(vector)
+
+                return {
+                    "vector": vector_list,
+                    "model": model_name,
+                }
+            except ImportError as e:
+                logger.warning("sentence-transformers dependency missing for embeddings (%s).", str(e))
+            except Exception as e:
+                logger.error("Embedding generation failed: %s", str(e))
+
+            return {
+                "vector": [],
+                "model": model_name,
+            }
+
+        def generate_embedding(text: str) -> Dict:
+            """Generate multilingual sentence embedding using Hugging Face API."""
+            model_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+
+            if not text or not text.strip():
+                return {
+                    "vector": [],
+                    "model": model_name,
+                }
+
+            hf_api_token = os.getenv("HF_API_TOKEN")
+            if not hf_api_token:
+                logger.warning("HF_API_TOKEN missing. Skipping embedding generation.")
+                return {
+                    "vector": [],
+                    "model": model_name,
+                }
+
+            hf_timeout = _get_hf_timeout_seconds()
+    
+            try:
+                body = json.dumps({
+                    "inputs": text,
+                    "options": {"wait_for_model": True}
+                }).encode("utf-8")
+        
+                for endpoint in _hf_inference_endpoints(model_name):
+                    req = request.Request(
+                        endpoint,
+                        data=body,
+                        method="POST",
+                        headers={
+                            "Authorization": f"Bearer {hf_api_token}",
+                            "Content-Type": "application/json",
+                        },
+                    )
+            
+                    try:
+                        with request.urlopen(req, timeout=hf_timeout) as res:
+                            raw_payload = res.read().decode("utf-8")
+                            payload = json.loads(raw_payload)
+                
+                        if isinstance(payload, dict) and payload.get("error"):
+                            logger.warning("HF API error: %s", payload.get("error"))
+                            continue
+                
+                        # HF Feature Extraction API returns embeddings directly
+                        if isinstance(payload, list) and len(payload) > 0:
+                            vector_list = payload[0] if isinstance(payload[0], list) else payload
+                            return {
+                                "vector": vector_list,
+                                "model": model_name,
+                            }
+                    
+                    except Exception as e:
+                        logger.warning("HF API embedding request failed: %s", str(e))
+                        continue
+                
+            except Exception as e:
+                logger.error("Embedding generation failed: %s", str(e))
+
+            return {
                 ranked_topics.append(str(label))
-            if len(ranked_topics) >= max_labels:
-                break
-
-        if ranked_topics:
-            return ranked_topics
-
-        if labels:
-            return [str(labels[0])]
-    except ImportError as e:
-        logger.warning("Transformers dependencies missing for topic classification (%s).", str(e))
-    except Exception as e:
-        logger.error("Zero-shot topic classification failed: %s", str(e))
-
-    topics = []
-    work_keywords = ["work", "email", "project", "deliverable", "deadline"]
-    health_keywords = ["walk", "exercise", "sleep", "health", "tired"]
-    mood_keywords = ["grateful", "happy", "sad", "anxious", "stressed"]
-
-    text_lower = text.lower()
-
-    if any(k in text_lower for k in work_keywords):
-        topics.append("Work & Productivity")
-    if any(k in text_lower for k in health_keywords):
-        topics.append("Health & Wellness")
-    if any(k in text_lower for k in mood_keywords):
-        topics.append("Emotions & Mental Health")
-
-    return topics or ["Daily Life"]
-
-
-
-
-
-
-
+                "model": model_name,
+            }
 
 
 

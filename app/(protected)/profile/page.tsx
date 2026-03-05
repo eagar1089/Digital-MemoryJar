@@ -72,7 +72,9 @@ export default function ProfilePage() {
     }).length
   }, [memories])
 
-  const initials = name.slice(0, 2).toUpperCase()
+  const accountAvatar =
+    user?.photoURL ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(email || "User")}&background=0D8ABC&color=fff&rounded=true`
 
   const handleExportMemories = async () => {
     setIsExporting(true)
@@ -145,17 +147,11 @@ export default function ProfilePage() {
         {showProfileCard && (
           <Card className="glass-gradient-primary border-0 p-6 space-y-4">
             <div className="flex items-center gap-4">
-              {user?.photoURL ? (
-                <img
-                  src={user.photoURL}
-                  alt="Profile"
-                  className="w-16 h-16 rounded-full object-cover border border-primary/20"
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-xl">
-                  {initials}
-                </div>
-              )}
+              <img
+                src={accountAvatar}
+                alt="Profile"
+                className="w-16 h-16 rounded-full object-cover border border-primary/20"
+              />
               <div className="flex-1">
                 <h2 className="text-lg font-bold">{name}</h2>
                 <p className="text-sm text-muted-foreground">{email}</p>
