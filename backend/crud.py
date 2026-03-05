@@ -73,7 +73,7 @@ def update_memory_by_id(memory_id: str, updates: dict) -> bool:
             {"_id": ObjectId(memory_id)},
             {"$set": updates}
         )
-        return result.modified_count > 0
+        return result.matched_count > 0
     except Exception:
         return False
 

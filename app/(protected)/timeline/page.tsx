@@ -48,7 +48,7 @@ export default function TimelinePage() {
   }, [memories])
 
   const moodEmojis: Record<string, string> = {
-    all: "📋",
+    all: "?",
     happy: "😊",
     calm: "🌿",
     reflective: "🤔",
@@ -58,14 +58,50 @@ export default function TimelinePage() {
     neutral: "📝",
   }
 
+  function toDateKey(input: string | Date): string {
+    if (typeof input === "string") {
+      const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(input)
+      if (isDateOnly) {
+        return input
+      }
+    }
+
+    const date = input instanceof Date ? input : new Date(input)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+  }
+
+  function toUTCDateKey(input: string | Date): string {
+    const date = input instanceof Date ? input : new Date(input)
+    const year = date.getUTCFullYear()
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0")
+    const day = String(date.getUTCDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+  }
+
+  function matchesSelectedDate(createdAt: string, selected: string | null): boolean {
+    if (!selected) return true
+
+    if (/^\d{4}-\d{2}-\d{2}/.test(createdAt) && createdAt.slice(0, 10) === selected) {
+      return true
+    }
+
+    const localKey = toDateKey(createdAt)
+    if (localKey === selected) return true
+
+    const utcKey = toUTCDateKey(createdAt)
+    return utcKey === selected
+  }
+
   const filteredMemories = memories.filter((memory) => {
     const searchableText = `${memory.ai_summary || ""} ${memory.content || ""}`.toLowerCase()
     const matchesSearch =
       searchableText.includes(searchQuery.toLowerCase()) ||
       (memory.tags || []).some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     const matchesMood = !selectedMood || selectedMood === "all" || (memory.mood || "") === selectedMood
-    const memoryDate = memory.created_at ? new Date(memory.created_at).toISOString().slice(0, 10) : ""
-    const matchesDate = !selectedDate || memoryDate === selectedDate
+    const matchesDate = memory.created_at ? matchesSelectedDate(memory.created_at, selectedDate) : !selectedDate
     return matchesSearch && matchesMood && matchesDate
   })
 

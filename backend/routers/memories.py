@@ -133,9 +133,13 @@ async def update_memory(memory_id: str, payload: schemas.MemoryUpdate, user: dic
 	if not updates:
 		raise HTTPException(status_code=400, detail="No updates provided")
 
+	existing = crud.get_memory_by_id(memory_id)
+	if not existing:
+		raise HTTPException(status_code=404, detail="Memory not found")
+
 	updated = crud.update_memory_by_id(memory_id, updates)
 	if not updated:
-		raise HTTPException(status_code=404, detail="Memory not found or unchanged")
+		raise HTTPException(status_code=500, detail="Failed to update memory")
 
 	memory = crud.get_memory_by_id(memory_id)
 	if not memory:

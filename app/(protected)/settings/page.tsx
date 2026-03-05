@@ -10,6 +10,13 @@ import { useTheme } from "@/lib/theme-provider"
 import { useAuth } from "@/lib/auth-context"
 import { auth } from "@/lib/firebase"
 import { signOut } from "firebase/auth"
+import {
+  showErrorAlert,
+  showInfoAlert,
+  showQuestionAlert,
+  showSuccessAlert,
+  showWarningAlert,
+} from "@/lib/glass-alert"
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -296,6 +303,27 @@ export default function SettingsPage() {
         </Card>
 
         {/* About */}
+        <Card className="glass border-primary/20 p-4 space-y-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase">SweetAlert2 Demo</p>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={showSuccessAlert}>
+              Launch Success Toast
+            </Button>
+            <Button size="sm" className="bg-cyan-500 hover:bg-cyan-600 text-white" onClick={showInfoAlert}>
+              Launch Info Toast
+            </Button>
+            <Button size="sm" className="bg-red-500 hover:bg-red-600 text-white" onClick={showErrorAlert}>
+              Launch Error Toast
+            </Button>
+            <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-black" onClick={showWarningAlert}>
+              Launch Warning Toast
+            </Button>
+            <Button size="sm" variant="outline" onClick={showQuestionAlert}>
+              Launch Question Toast
+            </Button>
+          </div>
+        </Card>
+
         <Card className="glass border-primary/20 p-4 text-center space-y-2">
           <p className="text-xs text-muted-foreground">Digital Memory Jar v1.0.0</p>
           <Link href="/about" className="text-xs text-primary hover:underline">
