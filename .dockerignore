@@ -1,0 +1,15 @@
+.git
+.gitignore
+.next
+.vercel
+node_modules
+backend/.venv
+backend/__pycache__
+backend/nlp/__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.log
+**/.DS_Store
+.env
+backend/.env
