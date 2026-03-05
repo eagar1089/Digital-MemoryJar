@@ -136,19 +136,18 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             {recentMemories.length > 0 ? (
               recentMemories.map((memory) => (
-                <Card
-                  key={memory.id}
-                  className="glass-gradient-primary border-0 p-4 md:p-6 space-y-2 cursor-pointer hover:border-primary/40 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm md:text-base font-medium">{new Date(memory.created_at).toLocaleDateString()}</p>
-                      <p className="text-xs md:text-sm text-muted-foreground mt-1">{new Date(memory.created_at).toLocaleTimeString()}</p>
+                <Link key={memory.id} href={`/${memory.id}`}>
+                  <Card className="glass-gradient-primary border-0 p-4 md:p-6 space-y-2 cursor-pointer hover:border-primary/40 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm md:text-base font-medium">{new Date(memory.created_at).toLocaleDateString()}</p>
+                        <p className="text-xs md:text-sm text-muted-foreground mt-1">{new Date(memory.created_at).toLocaleTimeString()}</p>
+                      </div>
+                      <span className="text-lg md:text-2xl">{moodEmojis[memory.mood || "neutral"] || "📝"}</span>
                     </div>
-                    <span className="text-lg md:text-2xl">{moodEmojis[memory.mood || "neutral"] || "📝"}</span>
-                  </div>
-                  <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{memory.ai_summary || memory.content}</p>
-                </Card>
+                    <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{memory.ai_summary || memory.content}</p>
+                  </Card>
+                </Link>
               ))
             ) : (
               <Card className="glass-gradient-primary border-0 p-4 md:p-6">

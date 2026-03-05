@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
+import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,7 +10,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Edit2, Trash2, Share2 } from "lucide-react"
 import { api, type Memory } from "@/lib/api-client"
 
-export default function MemoryDetailPage({ params }: { params: { id: string } }) {
+export default function MemoryDetailPage() {
+  const params = useParams<{ id: string }>()
+  const memoryId = Array.isArray(params?.id) ? params.id[0] : params?.id
   const [isEditing, setIsEditing] = useState(false)
   const [memory, setMemory] = useState<Memory | null>(null)
   const [error, setError] = useState("")
@@ -20,9 +23,11 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
   const [draftTags, setDraftTags] = useState("")
 
   useEffect(() => {
+    if (!memoryId) return
+
     async function loadMemory() {
       try {
-        const memoryRes = await api.getMemory(params.id)
+        const memoryRes = await api.getMemory(memoryId)
         setMemory(memoryRes)
         setDraftContent(memoryRes.content || "")
         setDraftSummary(memoryRes.ai_summary || "")
@@ -35,7 +40,7 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
     }
 
     loadMemory()
-  }, [params.id])
+  }, [memoryId])
 
   const moodEmojis: Record<string, string> = {
     happy: "😊",

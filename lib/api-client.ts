@@ -4,8 +4,7 @@
 
 import { getAuth } from "firebase/auth";
 
-// Set this to your backend URL. For local dev: http://127.0.0.1:8000
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 async function waitForAuthReady(timeoutMs = 4000): Promise<void> {
   const auth = getAuth();

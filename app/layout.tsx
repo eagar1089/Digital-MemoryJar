@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/lib/theme-provider"
 import { FloatingNav } from "@/components/floating-nav"
 import { ClientAuthProvider } from "@/components/auth-provider"
 import "./globals.css"
+import "sweetalert2/dist/sweetalert2.min.css"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })

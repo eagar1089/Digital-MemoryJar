@@ -238,4 +238,74 @@
   .dark .nav-gradient-border::after {
     background: linear-gradient(135deg, rgba(0, 0, 0, 0.8) 0%, rgba(20, 20, 30, 0.9) 100%);
   }
+
+    .swal-glass-popup {
+      background: color-mix(in oklab, var(--card) 80%, transparent) !important;
+      color: var(--foreground) !important;
+      border: 1px solid color-mix(in oklab, var(--border) 70%, transparent) !important;
+      border-radius: 14px !important;
+      backdrop-filter: blur(14px) !important;
+      box-shadow: 0 12px 36px color-mix(in oklab, var(--primary) 18%, transparent) !important;
+    }
+
+    .swal-glass-title {
+      color: var(--foreground) !important;
+      font-weight: 700 !important;
+      font-size: 0.82rem !important;
+      margin: 0 0 0.12rem !important;
+    }
+
+    .swal-glass-text {
+      color: var(--muted-foreground) !important;
+      font-size: 0.69rem !important;
+      margin: 0 !important;
+      line-height: 1.18 !important;
+    }
+
+    .swal-glass-actions {
+      gap: 0.32rem;
+      margin-top: 0.3rem !important;
+      margin-bottom: 0 !important;
+    }
+
+    .swal-glass-confirm {
+      background: var(--gradient-primary) !important;
+      color: white !important;
+      border: 0 !important;
+      border-radius: 7px !important;
+      padding: 0.24rem 0.5rem !important;
+      font-size: 0.66rem !important;
+      font-weight: 600 !important;
+    }
+
+    .swal-glass-cancel {
+      background: transparent !important;
+      color: var(--foreground) !important;
+      border: 1px solid color-mix(in oklab, var(--border) 85%, transparent) !important;
+      border-radius: 7px !important;
+      padding: 0.24rem 0.5rem !important;
+      font-size: 0.66rem !important;
+      font-weight: 600 !important;
+    }
+
+    .swal-glass-close {
+      color: var(--muted-foreground) !important;
+      font-size: 1rem !important;
+      top: 0.2rem !important;
+      right: 0.3rem !important;
+      transition: color 160ms ease;
+    }
+
+    .swal-glass-close:hover {
+      color: var(--foreground) !important;
+    }
+
+    .swal-glass-popup .swal2-icon {
+      transform: scale(0.6);
+      margin: 0 auto 0.08rem !important;
+    }
+
+    .swal-glass-popup .swal2-timer-progress-bar-container {
+      height: 0.14rem !important;
+    }
 }
