@@ -206,6 +206,27 @@ export interface MeResponse {
   email_verified?: boolean;
 }
 
+export interface SpotifySuggestPayload {
+  mood?: string;
+  keywords?: string[];
+  topics?: string[];
+}
+
+export interface SpotifyTrack {
+  title: string;
+  artist: string;
+  url: string;
+  album_image?: string | null;
+  preview_url?: string | null;
+}
+
+export interface SpotifySuggestResponse {
+  mood: string;
+  query: string;
+  primary: SpotifyTrack;
+  alternatives: SpotifyTrack[];
+}
+
 // API methods
 export const api = {
   async getMemories(): Promise<Memory[]> {
@@ -234,5 +255,9 @@ export const api = {
 
   async getMe(): Promise<MeResponse> {
     return apiGet("/auth/me");
+  },
+
+  async spotifySuggest(data: SpotifySuggestPayload): Promise<SpotifySuggestResponse> {
+    return apiPost("/spotify/suggest", data);
   },
 };

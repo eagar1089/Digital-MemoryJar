@@ -48,7 +48,7 @@ export default function ProtectedLayout({
         <div className="max-w-6xl mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center">
             <Link
-              href="/dashboard"
+              href="/home"
               className="text-2xl font-bold text-gradient-brand px-3 py-2 rounded-md"
             >
               DMJ

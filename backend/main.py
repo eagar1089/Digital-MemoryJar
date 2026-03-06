@@ -10,7 +10,7 @@ from pathlib import Path
 load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
 load_dotenv()
 
-from backend.routers import auth, memories, dashboard
+from backend.routers import auth, memories, dashboard, spotify
 from backend.nlp_processor import process_unprocessed_memories
 
 # Configure logging
@@ -55,6 +55,7 @@ def root():
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(memories.router, prefix="/memories", tags=["memories"])
 app.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
+app.include_router(spotify.router, prefix="/spotify", tags=["spotify"])
 
 
 # # Background scheduler for processing unprocessed memories

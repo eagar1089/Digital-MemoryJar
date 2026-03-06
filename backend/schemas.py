@@ -65,3 +65,24 @@ class StatsResponse(BaseModel):
     most_common_mood: Optional[str] = None
     top_emotions: Optional[Dict[str, float]] = None
     top_topics: Optional[List[str]] = None
+
+
+class SpotifySuggestRequest(BaseModel):
+    mood: Optional[str] = Field("neutral", description="Detected mood")
+    keywords: List[str] = Field(default_factory=list, description="Top keywords from latest memory")
+    topics: List[str] = Field(default_factory=list, description="Top topics from latest memory")
+
+
+class SpotifyTrack(BaseModel):
+    title: str
+    artist: str
+    url: str
+    album_image: Optional[str] = None
+    preview_url: Optional[str] = None
+
+
+class SpotifySuggestResponse(BaseModel):
+    mood: str
+    query: str
+    primary: SpotifyTrack
+    alternatives: List[SpotifyTrack] = Field(default_factory=list)

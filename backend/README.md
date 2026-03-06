@@ -10,6 +10,12 @@ uvicorn backend.main:app --reload --port 8000
 ```
 - Replace the `auth` router with proper Firebase/JWT verification
 
+**Spotify Recommendations**
+----------------------------
+- `SPOTIFY_CLIENT_ID` = Spotify app client id
+- `SPOTIFY_CLIENT_SECRET` = Spotify app client secret
+
+
 **NLP Processing**
 emotion scoring
 ----------------------------------
