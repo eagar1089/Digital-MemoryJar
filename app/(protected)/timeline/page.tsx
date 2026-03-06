@@ -112,7 +112,7 @@ export default function TimelinePage() {
         <div className="absolute bottom-20 right-10 w-72 h-72 bg-accent/10 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative z-10 max-w-md mx-auto px-4 py-8 space-y-6">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12 space-y-6 md:space-y-8">
         <div className="space-y-2">
           <h1 className="text-3xl font-bold">Memory Timeline</h1>
           <p className="text-muted-foreground">Browse your memories and reflections</p>
@@ -124,36 +124,38 @@ export default function TimelinePage() {
           </Card>
         )}
 
-        <Card className="glass border-primary/20 p-3 flex items-center gap-2">
-          <Search size={18} className="text-muted-foreground" />
-          <Input
-            placeholder="Search memories..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="border-0 bg-transparent focus:outline-none text-sm"
-          />
-        </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+          <Card className="glass border-primary/20 p-3 flex items-center gap-2 md:col-span-1">
+            <Search size={18} className="text-muted-foreground" />
+            <Input
+              placeholder="Search memories..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border-0 bg-transparent focus:outline-none text-sm"
+            />
+          </Card>
 
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase">Filter by mood</p>
-          <div className="flex flex-wrap gap-2">
-            {moods.map((mood) => (
-              <Button
-                key={mood}
-                onClick={() => setSelectedMood(selectedMood === mood ? null : mood)}
-                variant={selectedMood === mood ? "default" : "outline"}
-                size="sm"
-                className={`${
-                  selectedMood === mood
-                    ? "bg-primary text-primary-foreground"
-                    : "border-primary/30 hover:bg-primary/5 bg-transparent"
-                }`}
-              >
-                <span className="mr-1">{moodEmojis[mood] || "📝"}</span>
-                {mood.charAt(0).toUpperCase() + mood.slice(1)}
-              </Button>
-            ))}
-          </div>
+          <Card className="glass border-primary/20 p-3 md:col-span-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Filter by mood</p>
+            <div className="flex flex-wrap gap-2">
+              {moods.map((mood) => (
+                <Button
+                  key={mood}
+                  onClick={() => setSelectedMood(selectedMood === mood ? null : mood)}
+                  variant={selectedMood === mood ? "default" : "outline"}
+                  size="sm"
+                  className={`$${
+                    selectedMood === mood
+                      ? "bg-primary text-primary-foreground"
+                      : "border-primary/30 hover:bg-primary/5 bg-transparent"
+                  }`}
+                >
+                  <span className="mr-1">{moodEmojis[mood] || "📝"}</span>
+                  {mood.charAt(0).toUpperCase() + mood.slice(1)}
+                </Button>
+              ))}
+            </div>
+          </Card>
         </div>
 
         {selectedDate && (
@@ -162,7 +164,7 @@ export default function TimelinePage() {
           </Card>
         )}
 
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
           {filteredMemories.length > 0 ? (
             filteredMemories.map((memory) => (
               <MemoryCard

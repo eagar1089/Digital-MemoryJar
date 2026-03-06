@@ -80,17 +80,29 @@ export default function DashboardPage() {
   }, [memories])
 
   const weeklyMoodData = useMemo(() => {
-    const dayMap = new Map<string, number>()
+    const now = new Date()
+    const mondayBasedIndex = (now.getDay() + 6) % 7
+    const weekStart = new Date(now)
+    weekStart.setDate(now.getDate() - mondayBasedIndex)
+    weekStart.setHours(0, 0, 0, 0)
+
+    const weekEnd = new Date(weekStart)
+    weekEnd.setDate(weekStart.getDate() + 7)
+
+    const dayMap = new Map<number, number>()
     for (const memory of memories) {
       const date = memory.created_at ? new Date(memory.created_at) : null
       if (!date || Number.isNaN(date.getTime())) continue
-      const key = date.toLocaleDateString(undefined, { weekday: "short" })
-      dayMap.set(key, (dayMap.get(key) || 0) + 1)
+
+      if (date < weekStart || date >= weekEnd) continue
+
+      const dayIndex = (date.getDay() + 6) % 7
+      dayMap.set(dayIndex, (dayMap.get(dayIndex) || 0) + 1)
     }
 
-    return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => ({
+    return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, index) => ({
       day,
-      memories: dayMap.get(day) || 0,
+      memories: dayMap.get(index) || 0,
     }))
   }, [memories])
 
@@ -148,13 +160,14 @@ export default function DashboardPage() {
         <div className="absolute bottom-20 right-10 w-72 h-72 bg-accent/10 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative z-10 max-w-md mx-auto px-4 py-8 space-y-6">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12 space-y-6 md:space-y-8">
         {/* Header */}
         <div className="space-y-2">
           <h1 className="text-3xl font-bold">Analytics</h1>
           <p className="text-muted-foreground">Your emotional journey this week</p>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         {/* Mood distribution */}
         <Card className="glass-gradient-primary border-0 p-6 space-y-4">
           <h2 className="text-sm font-semibold">Mood Distribution</h2>
@@ -217,7 +230,9 @@ export default function DashboardPage() {
             </ResponsiveContainer>
           </div>
         </Card>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         {/* Word cloud */}
         <Card className="glass-gradient-cool border-0 p-6 space-y-4">
           <h2 className="text-sm font-semibold">Most Frequent Words</h2>
@@ -247,12 +262,13 @@ export default function DashboardPage() {
             ))}
           </div>
         </Card>
+        </div>
 
         {error && <Card className="glass border-destructive/20 p-4 text-sm text-destructive">{error}</Card>}
         {loading && <Card className="glass border-primary/20 p-4 text-sm text-muted-foreground">Loading analytics...</Card>}
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <Card className="glass-gradient-primary border-0 p-4 text-center space-y-2">
             <p className="text-2xl font-bold">{stats?.total_memories ?? 0}</p>
             <p className="text-xs text-muted-foreground">Total Memories</p>

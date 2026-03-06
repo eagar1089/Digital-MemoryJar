@@ -104,7 +104,7 @@ export default function MemoryDetailPage() {
         <div className="absolute bottom-20 right-10 w-72 h-72 bg-accent/10 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative z-10 max-w-md mx-auto px-4 py-8 space-y-6">
+      <div className="relative z-10 max-w-5xl mx-auto px-4 md:px-8 py-8 md:py-12 space-y-6 md:space-y-8">
         <div className="flex items-center justify-between">
           <Link
             href="/timeline"
@@ -150,7 +150,8 @@ export default function MemoryDetailPage() {
 
         {memory && (
           <>
-            <Card className="glass border-primary/20 p-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+            <Card className="glass border-primary/20 p-6 space-y-4 md:col-span-3">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">{new Date(memory.created_at).toLocaleDateString()}</p>
@@ -172,7 +173,7 @@ export default function MemoryDetailPage() {
               )}
             </Card>
 
-            <Card className="glass border-primary/20 p-4 space-y-2">
+            <Card className="glass border-primary/20 p-4 space-y-2 md:col-span-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase">AI Summary</p>
               {isEditing ? (
                 <Textarea
@@ -186,7 +187,7 @@ export default function MemoryDetailPage() {
             </Card>
 
             {isEditing && (
-              <Card className="glass border-primary/20 p-4 space-y-3">
+              <Card className="glass border-primary/20 p-4 space-y-3 md:col-span-2">
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Mood</p>
                   <Input value={draftMood} onChange={(e) => setDraftMood(e.target.value)} placeholder="e.g. calm" />
@@ -203,7 +204,7 @@ export default function MemoryDetailPage() {
               <p className="text-sm">{aiInsight}</p>
             </Card>
 
-            <Card className="glass border-primary/20 p-4 space-y-3">
+            <Card className="glass border-primary/20 p-4 space-y-3 md:col-span-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase">Tags</p>
               <div className="flex flex-wrap gap-2">
                 {(memory.tags || []).length > 0 ? (
@@ -217,6 +218,7 @@ export default function MemoryDetailPage() {
                 )}
               </div>
             </Card>
+            </div>
           </>
         )}
 

@@ -122,7 +122,7 @@ export default function ProfilePage() {
         <div className="absolute bottom-20 right-10 w-72 h-72 bg-accent/10 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative z-10 max-w-md mx-auto px-4 py-8 space-y-6">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12 space-y-6 md:space-y-8">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Profile</h1>
           <Link href="/settings">
@@ -161,7 +161,7 @@ export default function ProfilePage() {
           </Card>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <Card className="glass-gradient-primary border-0 p-4 text-center space-y-2">
             <p className="text-2xl font-bold">{stats?.total_memories ?? 0}</p>
             <p className="text-xs text-muted-foreground">Total Memories</p>
@@ -180,6 +180,7 @@ export default function ProfilePage() {
           </Card>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         <Card className="glass-gradient-secondary border-0 p-4 space-y-3">
           <p className="text-sm font-semibold">Theme</p>
           <div className="flex gap-2">
@@ -203,7 +204,7 @@ export default function ProfilePage() {
           </div>
         </Card>
 
-        <div className="space-y-2 pt-4">
+        <div className="space-y-2 pt-0 md:pt-0">
           <Button
             onClick={handleExportMemories}
             disabled={isExporting}
@@ -222,6 +223,7 @@ export default function ProfilePage() {
             <LogOut size={16} className="mr-2" />
             {isSigningOut ? "Signing Out..." : "Sign Out"}
           </Button>
+        </div>
         </div>
       </div>
     </main>

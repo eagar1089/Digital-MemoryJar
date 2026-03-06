@@ -102,7 +102,7 @@ export default function SettingsPage() {
         <div className="absolute bottom-20 right-10 w-72 h-72 bg-accent/10 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative z-10 max-w-md mx-auto px-4 py-8 space-y-6">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12 space-y-6 md:space-y-8">
         {/* Header */}
         <div className="flex items-center gap-3">
           <Link
@@ -126,6 +126,7 @@ export default function SettingsPage() {
           </Card>
         )}
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         <Card className="glass border-primary/20 p-6 space-y-4">
           <div className="flex items-center gap-3">
             <UserCircle2 className="w-5 h-5 text-primary" />
@@ -301,6 +302,7 @@ export default function SettingsPage() {
             </Button>
           </div>
         </Card>
+        </div>
 
         {/* About */}
         <Card className="glass border-primary/20 p-4 space-y-3">
