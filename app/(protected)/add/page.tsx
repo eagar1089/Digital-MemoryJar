@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 
 import Link from "next/link"
@@ -12,14 +12,34 @@ import { api, apiPost } from "@/lib/api-client"
 export default function AddMemoryPage() {
   const router = useRouter()
   const [memory, setMemory] = useState("")
+  const recognitionRef = useRef<any>(null)
+  const shouldRestartRecognitionRef = useRef(false)
+  const noSpeechRetriesRef = useRef(0)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analyzed, setAnalyzed] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [usedVoiceInput, setUsedVoiceInput] = useState(false)
+  const [aiSummaryEnabled, setAiSummaryEnabled] = useState(true)
   const [aiSummary, setAiSummary] = useState("")
   const [detectedMood, setDetectedMood] = useState("")
   const [detectedTags, setDetectedTags] = useState<string[]>([])
   const [error, setError] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
+
+  useEffect(() => {
+    const storedAiSummary = localStorage.getItem("dmj.aiSummary")
+    if (storedAiSummary !== null) {
+      setAiSummaryEnabled(storedAiSummary === "true")
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+        recognitionRef.current = null
+      }
+    }
+  }, [])
 
   const handleAnalyze = async () => {
     if (!memory.trim()) return
@@ -49,13 +69,41 @@ export default function AddMemoryPage() {
 
     try {
       // Call backend API to save memory and process it
-      const response = await apiPost("/memories/", {
+      const response = await apiPost<{ id: string | number } | null>("/memories/", {
         content: memory,
         mood: detectedMood || undefined,
         ai_summary: aiSummary || undefined,
         tags: detectedTags.length ? detectedTags : ["personal", "reflection", "growth"],
-        recorded_by: "text",
+        recorded_by: usedVoiceInput ? "voice" : "text",
       })
+
+      const dataBackupEnabled = localStorage.getItem("dmj.dataBackup") === "true"
+      if (dataBackupEnabled) {
+        const existing = localStorage.getItem("dmj.localBackups")
+        const backups = existing ? JSON.parse(existing) : []
+        backups.unshift({
+          id: response?.id || null,
+          content: memory,
+          mood: detectedMood || null,
+          ai_summary: aiSummary || null,
+          tags: detectedTags,
+          recorded_by: usedVoiceInput ? "voice" : "text",
+          saved_at: new Date().toISOString(),
+        })
+        localStorage.setItem("dmj.localBackups", JSON.stringify(backups.slice(0, 20)))
+      }
+
+      const notificationsEnabled = localStorage.getItem("dmj.notifications") === "true"
+      if (notificationsEnabled && "Notification" in window) {
+        if (Notification.permission === "default") {
+          await Notification.requestPermission()
+        }
+        if (Notification.permission === "granted") {
+          new Notification("Memory saved", {
+            body: "Your memory has been saved to Digital Memory Jar.",
+          })
+        }
+      }
 
       setSuccessMessage("Memory saved! It's being processed by the AI pipeline...")
       
@@ -65,6 +113,7 @@ export default function AddMemoryPage() {
         setAnalyzed(false)
         setAiSummary("")
         setDetectedMood("")
+        setUsedVoiceInput(false)
         setSuccessMessage("")
         // Redirect to dashboard to see the new memory
         router.push("/dashboard")
@@ -79,12 +128,117 @@ export default function AddMemoryPage() {
   }
 
   const handleDiscard = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
+      recognitionRef.current = null
+    }
+    setIsRecording(false)
     setMemory("")
     setAnalyzed(false)
     setAiSummary("")
     setDetectedMood("")
     setDetectedTags([])
+    setUsedVoiceInput(false)
     setError("")
+  }
+
+  const handleRecord = async () => {
+    if (isRecording && recognitionRef.current) {
+      shouldRestartRecognitionRef.current = false
+      noSpeechRetriesRef.current = 0
+      recognitionRef.current.stop()
+      setIsRecording(false)
+      return
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      setError("Voice input is not supported in this browser.")
+      return
+    }
+
+    setError("")
+    noSpeechRetriesRef.current = 0
+
+    const recognition = new SpeechRecognition()
+    recognition.lang = "en-US"
+    recognition.continuous = true
+    recognition.interimResults = true
+    recognition.maxAlternatives = 1
+
+    recognition.onresult = (event: any) => {
+      let finalTranscript = ""
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i]
+        const transcript = result?.[0]?.transcript?.trim()
+        if (!transcript) continue
+        if (result.isFinal) {
+          finalTranscript += `${finalTranscript ? " " : ""}${transcript}`
+        }
+      }
+
+      if (!finalTranscript) return
+
+      setMemory((prev) => {
+        if (!prev.trim()) return finalTranscript
+        return `${prev.trim()} ${finalTranscript}`
+      })
+      setUsedVoiceInput(true)
+    }
+
+    recognition.onerror = (event: any) => {
+      const code = event?.error as string | undefined
+
+      if (code === "aborted") {
+        shouldRestartRecognitionRef.current = false
+        noSpeechRetriesRef.current = 0
+        setIsRecording(false)
+        return
+      }
+
+      if (code === "no-speech") {
+        if (noSpeechRetriesRef.current < 2) {
+          noSpeechRetriesRef.current += 1
+          shouldRestartRecognitionRef.current = true
+          setError("No speech detected yet. Keep speaking — listening will retry automatically.")
+          recognition.stop()
+          return
+        }
+        setError("No speech detected. Check mic input level and speak a bit louder/closer.")
+      } else if (code === "audio-capture") {
+        setError("No microphone detected. Connect or enable a microphone and try again.")
+      } else if (code === "not-allowed" || code === "service-not-allowed") {
+        setError("Microphone access is blocked. Allow microphone permission in your browser settings.")
+      } else {
+        const reason = code ? ` (${code})` : ""
+        setError(`Voice capture failed${reason}`)
+      }
+
+      shouldRestartRecognitionRef.current = false
+      noSpeechRetriesRef.current = 0
+      setIsRecording(false)
+    }
+
+    recognition.onend = () => {
+      if (shouldRestartRecognitionRef.current) {
+        shouldRestartRecognitionRef.current = false
+        try {
+          recognition.start()
+          setIsRecording(true)
+          return
+        } catch {
+          setError("Voice capture stopped unexpectedly. Tap Record to try again.")
+        }
+      }
+
+      noSpeechRetriesRef.current = 0
+      setIsRecording(false)
+    }
+
+    recognitionRef.current = recognition
+    recognition.start()
+    setIsRecording(true)
   }
 
   const moodEmojis: Record<string, string> = {
@@ -150,15 +304,21 @@ export default function AddMemoryPage() {
           </div>
 
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="border-primary/30 hover:bg-primary/5 bg-transparent">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRecord}
+              className="border-primary/30 hover:bg-primary/5 bg-transparent"
+            >
               <Mic size={16} className="mr-2" />
-              Record
+              {isRecording ? "Stop" : "Record"}
             </Button>
           </div>
+          {isRecording && <p className="text-xs text-muted-foreground">Listening... speak now.</p>}
         </Card>
 
         {/* Analyze button */}
-        {!analyzed && (
+        {!analyzed && aiSummaryEnabled && (
           <Button
             onClick={handleAnalyze}
             disabled={!memory.trim() || isAnalyzing}
@@ -176,6 +336,14 @@ export default function AddMemoryPage() {
               </>
             )}
           </Button>
+        )}
+
+        {!aiSummaryEnabled && (
+          <Card className="glass border-primary/20 p-3">
+            <p className="text-xs text-muted-foreground">
+              AI summaries are disabled in settings. You can save memory directly.
+            </p>
+          </Card>
         )}
 
         {/* AI Analysis Results */}
@@ -213,33 +381,34 @@ export default function AddMemoryPage() {
               </div>
             </Card>
             </div>
+          </div>
+        )}
 
-            {/* Action buttons */}
-            <div className="flex gap-3 pt-4">
-              <Button
-                onClick={handleDiscard}
-                variant="outline"
-                disabled={isSaving}
-                className="flex-1 border-primary/30 hover:bg-primary/5 bg-transparent"
-              >
-                <X size={16} className="mr-2" />
-                Discard
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground glow-primary"
-              >
-                {isSaving ? (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save Memory"
-                )}
-              </Button>
-            </div>
+        {(analyzed || !aiSummaryEnabled) && (
+          <div className="flex gap-3 pt-4">
+            <Button
+              onClick={handleDiscard}
+              variant="outline"
+              disabled={isSaving}
+              className="flex-1 border-primary/30 hover:bg-primary/5 bg-transparent"
+            >
+              <X size={16} className="mr-2" />
+              Discard
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={isSaving || !memory.trim()}
+              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground glow-primary"
+            >
+              {isSaving ? (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Memory"
+              )}
+            </Button>
           </div>
         )}
       </div>

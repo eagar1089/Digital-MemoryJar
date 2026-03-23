@@ -33,6 +33,21 @@ export default function SettingsPage() {
   const [isSigningOut, setIsSigningOut] = useState(false)
 
   useEffect(() => {
+    const notificationsStored = localStorage.getItem("dmj.notifications")
+    if (notificationsStored !== null) {
+      setNotifications(notificationsStored === "true")
+    }
+
+    const aiSummaryStored = localStorage.getItem("dmj.aiSummary")
+    if (aiSummaryStored !== null) {
+      setAiSummary(aiSummaryStored === "true")
+    }
+
+    const dataBackupStored = localStorage.getItem("dmj.dataBackup")
+    if (dataBackupStored !== null) {
+      setDataBackup(dataBackupStored === "true")
+    }
+
     const stored = localStorage.getItem("showProfileCard")
     if (stored === "false") {
       setShowProfileCard(false)
@@ -48,6 +63,21 @@ export default function SettingsPage() {
   const persistShowProfileCard = (value: boolean) => {
     setShowProfileCard(value)
     localStorage.setItem("showProfileCard", value ? "true" : "false")
+  }
+
+  const persistNotifications = (value: boolean) => {
+    setNotifications(value)
+    localStorage.setItem("dmj.notifications", value ? "true" : "false")
+  }
+
+  const persistAiSummary = (value: boolean) => {
+    setAiSummary(value)
+    localStorage.setItem("dmj.aiSummary", value ? "true" : "false")
+  }
+
+  const persistDataBackup = (value: boolean) => {
+    setDataBackup(value)
+    localStorage.setItem("dmj.dataBackup", value ? "true" : "false")
   }
 
   const accountAvatar =
@@ -195,7 +225,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-muted-foreground">Get reminded to log your thoughts</p>
               </div>
               <button
-                onClick={() => setNotifications(!notifications)}
+                onClick={() => persistNotifications(!notifications)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                   notifications ? "bg-primary" : "bg-muted"
                 }`}
@@ -223,7 +253,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-muted-foreground">Auto-generate summaries of your entries</p>
               </div>
               <button
-                onClick={() => setAiSummary(!aiSummary)}
+                onClick={() => persistAiSummary(!aiSummary)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                   aiSummary ? "bg-primary" : "bg-muted"
                 }`}
@@ -260,7 +290,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-muted-foreground">Automatically backup your memories</p>
               </div>
               <button
-                onClick={() => setDataBackup(!dataBackup)}
+                onClick={() => persistDataBackup(!dataBackup)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                   dataBackup ? "bg-primary" : "bg-muted"
                 }`}

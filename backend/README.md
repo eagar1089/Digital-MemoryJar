@@ -15,6 +15,12 @@ uvicorn backend.main:app --reload --port 8000
 - `SPOTIFY_CLIENT_ID` = Spotify app client id
 - `SPOTIFY_CLIENT_SECRET` = Spotify app client secret
 
+**AI Features (MVP)**
+----------------------------
+- `GET /ai/weekly-reflection` → weekly summary based on this user's memories
+- `GET /ai/mood-anomaly` → anomaly signal using recent vs baseline mood pattern
+- `POST /ai/companion-chat` with body `{ "question": "..." }` → contextual answer from matched memories
+
 
 **NLP Processing**
 emotion scoring

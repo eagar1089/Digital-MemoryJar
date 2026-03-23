@@ -142,6 +142,17 @@ export async function apiPut<T>(endpoint: string, body: unknown): Promise<T> {
   return res.json();
 }
 
+export async function apiDelete<T>(endpoint: string): Promise<T> {
+  const res = await apiFetch(endpoint, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const detail = await extractErrorMessage(res);
+    throw new Error(`DELETE ${endpoint} failed: ${res.status} - ${detail}`);
+  }
+  return res.json();
+}
+
 
 // NLP Types
 export interface EmotionScores {
@@ -227,6 +238,39 @@ export interface SpotifySuggestResponse {
   alternatives: SpotifyTrack[];
 }
 
+export interface WeeklyReflectionResponse {
+  period_start: string;
+  period_end: string;
+  total_entries: number;
+  dominant_mood: string;
+  top_topics: string[];
+  summary: string;
+}
+
+export interface MoodAnomalyResponse {
+  level: string;
+  summary: string;
+  recent_negative_ratio: number;
+  baseline_negative_ratio: number;
+  recent_entries: number;
+}
+
+export interface CompanionReference {
+  memory_id: string;
+  created_at: string;
+  snippet: string;
+}
+
+export interface CompanionChatResponse {
+  answer: string;
+  references: CompanionReference[];
+}
+
+export interface DeleteMemoryResponse {
+  status: string;
+  id: string;
+}
+
 // API methods
 export const api = {
   async getMemories(): Promise<Memory[]> {
@@ -245,6 +289,10 @@ export const api = {
     return apiPut(`/memories/${id}`, data);
   },
 
+  async deleteMemory(id: string): Promise<DeleteMemoryResponse> {
+    return apiDelete(`/memories/${id}`);
+  },
+
   async analyzeMemory(content: string): Promise<AnalyzeMemoryResponse> {
     return apiPost("/memories/analyze", { content });
   },
@@ -259,5 +307,17 @@ export const api = {
 
   async spotifySuggest(data: SpotifySuggestPayload): Promise<SpotifySuggestResponse> {
     return apiPost("/spotify/suggest", data);
+  },
+
+  async getWeeklyReflection(): Promise<WeeklyReflectionResponse> {
+    return apiGet("/ai/weekly-reflection");
+  },
+
+  async getMoodAnomaly(): Promise<MoodAnomalyResponse> {
+    return apiGet("/ai/mood-anomaly");
+  },
+
+  async companionChat(question: string): Promise<CompanionChatResponse> {
+    return apiPost("/ai/companion-chat", { question });
   },
 };

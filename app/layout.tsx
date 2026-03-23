@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "@/lib/theme-provider"
 import { FloatingNav } from "@/components/floating-nav"
 import { ClientAuthProvider } from "@/components/auth-provider"
+import { PWARegister } from "@/components/pwa-register"
 import "./globals.css"
 import "sweetalert2/dist/sweetalert2.min.css"
 
@@ -27,6 +28,7 @@ export default function RootLayout({
       <body className={`font-sans antialiased`} suppressHydrationWarning>
         <ClientAuthProvider>
           <ThemeProvider>
+            <PWARegister />
             {children}
             <FloatingNav />
           </ThemeProvider>

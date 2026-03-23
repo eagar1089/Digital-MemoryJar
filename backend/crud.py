@@ -28,12 +28,14 @@ def create_memory(data: dict) -> str:
     return str(res.inserted_id)
 
 
-def list_memories(limit: int = 50, processed_only: bool = False) -> List[dict]:
+def list_memories(limit: int = 50, processed_only: bool = False, uid: Optional[str] = None) -> List[dict]:
     col = get_collection("memories")
     
     query = {}
     if processed_only:
         query = {"is_processed": True}
+    if uid:
+        query["uid"] = uid
     
     docs = col.find(query).sort("created_at", -1).limit(limit)
     result = []
@@ -48,11 +50,15 @@ def list_memories(limit: int = 50, processed_only: bool = False) -> List[dict]:
     return result
 
 
-def get_memory_by_id(memory_id: str) -> Optional[dict]:
+def get_memory_by_id(memory_id: str, uid: Optional[str] = None) -> Optional[dict]:
     """Get a single memory by ID."""
     col = get_collection("memories")
     try:
-        doc = col.find_one({"_id": ObjectId(memory_id)})
+        query = {"_id": ObjectId(memory_id)}
+        if uid:
+            query["uid"] = uid
+
+        doc = col.find_one(query)
         if doc:
             doc["id"] = str(doc["_id"])
             if "created_at" in doc and isinstance(doc["created_at"], datetime):
@@ -64,16 +70,34 @@ def get_memory_by_id(memory_id: str) -> Optional[dict]:
         return None
 
 
-def update_memory_by_id(memory_id: str, updates: dict) -> bool:
+def update_memory_by_id(memory_id: str, updates: dict, uid: Optional[str] = None) -> bool:
     """Update editable memory fields by ID."""
     col = get_collection("memories")
     try:
         updates["updated_at"] = datetime.utcnow()
+        query = {"_id": ObjectId(memory_id)}
+        if uid:
+            query["uid"] = uid
+
         result = col.update_one(
-            {"_id": ObjectId(memory_id)},
+            query,
             {"$set": updates}
         )
         return result.matched_count > 0
+    except Exception:
+        return False
+
+
+def delete_memory_by_id(memory_id: str, uid: Optional[str] = None) -> bool:
+    """Delete a memory by ID. If uid is provided, only delete matching user's memory."""
+    col = get_collection("memories")
+    try:
+        query = {"_id": ObjectId(memory_id)}
+        if uid:
+            query["uid"] = uid
+
+        result = col.delete_one(query)
+        return result.deleted_count > 0
     except Exception:
         return False
 
@@ -99,14 +123,15 @@ def update_memory_with_nlp(memory_id: str, nlp_data: dict) -> bool:
         return False
 
 
-def get_stats() -> dict:
+def get_stats(uid: Optional[str] = None) -> dict:
     """Get aggregated stats from memories including emotion analysis."""
     col = get_collection("memories")
-    total = col.count_documents({})
+    match_filter = {"uid": uid} if uid else {}
+    total = col.count_documents(match_filter)
     
     # Get most common mood
     mood_pipeline = [
-        {"$match": {"mood": {"$exists": True}}},
+        {"$match": {**match_filter, "mood": {"$exists": True}}},
         {"$group": {"_id": "$mood", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
         {"$limit": 1},
@@ -116,7 +141,7 @@ def get_stats() -> dict:
     
     # Get top emotions across all memories
     emotion_pipeline = [
-        {"$match": {"nlp_insights.emotion_scores": {"$exists": True}}},
+        {"$match": {**match_filter, "nlp_insights.emotion_scores": {"$exists": True}}},
         {"$group": {
             "_id": None,
             "joy_avg": {"$avg": "$nlp_insights.emotion_scores.joy"},
@@ -142,7 +167,7 @@ def get_stats() -> dict:
     
     # Get top topics
     topic_pipeline = [
-        {"$match": {"nlp_insights.topics": {"$exists": True}}},
+        {"$match": {**match_filter, "nlp_insights.topics": {"$exists": True}}},
         {"$unwind": "$nlp_insights.topics"},
         {"$group": {"_id": "$nlp_insights.topics", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
