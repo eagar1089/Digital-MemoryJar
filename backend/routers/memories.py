@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from backend import crud, schemas
 from backend.auth_deps import verify_firebase_token
-from backend.nlp_processor import extract_emotion_scores, extract_keywords, categorize_topics
+from backend.nlp_processor import extract_emotion_scores, extract_keywords, categorize_topics, dominant_mood_from_scores
 
 
 router = APIRouter()
@@ -87,7 +87,7 @@ async def analyze_memory(payload: schemas.MemoryAnalyzeRequest, user: dict = Dep
 
 	_stage_log("2/6 emotion scoring")
 	emotion_scores = extract_emotion_scores(text)
-	mood = max(emotion_scores, key=emotion_scores.get) if emotion_scores else "neutral"
+	mood = dominant_mood_from_scores(emotion_scores)
 	_stage_log(f"emotion scoring done, mood={mood}")
 
 	_stage_log("3/6 keyword extraction")
