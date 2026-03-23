@@ -171,6 +171,34 @@ def _neutral_emotion_scores() -> Dict[str, float]:
     }
 
 
+def dominant_mood_from_scores(emotion_scores: Optional[Dict[str, float]]) -> str:
+    if not emotion_scores:
+        return "neutral"
+
+    normalized: Dict[str, float] = {}
+    for label, value in emotion_scores.items():
+        try:
+            normalized[str(label).lower()] = float(value)
+        except (TypeError, ValueError):
+            continue
+
+    if not normalized:
+        return "neutral"
+
+    max_score = max(normalized.values())
+    if max_score <= 0:
+        return "neutral"
+
+    top_labels = [label for label, score in normalized.items() if score == max_score]
+    if len(top_labels) != 1:
+        return "neutral"
+
+    top_label = top_labels[0]
+    if top_label in {"happy", "contentment", "optimism", "amusement", "excitement"}:
+        return "joy"
+    return top_label
+
+
 def _bucketize_emotions(label_scores: List[Dict[str, float]]) -> Dict[str, float]:
     bucket_scores = _neutral_emotion_scores()
     for item in label_scores:
@@ -440,7 +468,7 @@ def process_unprocessed_memories(batch_size: int = 50) -> Dict:
                 faiss_index=None,
             )
 
-            mood = max(emotion_scores, key=emotion_scores.get) if emotion_scores else "neutral"
+            mood = dominant_mood_from_scores(emotion_scores)
 
             nlp_data = {
                 "content_clean": cleaned_text,
