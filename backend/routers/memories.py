@@ -4,7 +4,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 
 from backend import crud, schemas
-from backend.auth_deps import verify_firebase_token, verify_firebase_token_optional
+from backend.auth_deps import verify_firebase_token
 from backend.nlp_processor import extract_emotion_scores, extract_keywords, categorize_topics
 
 
@@ -58,8 +58,8 @@ def _top_tags(keywords: List[str], topics: List[str], max_tags: int = 5) -> List
 
 
 @router.get("/", response_model=List[schemas.MemoryDB])
-async def list_memories(user: dict | None = Depends(verify_firebase_token_optional)):
-	docs = crud.list_memories()
+async def list_memories(user: dict = Depends(verify_firebase_token)):
+	docs = crud.list_memories(uid=user.get("uid"))
 	return docs
 
 
@@ -119,9 +119,9 @@ async def analyze_memory(payload: schemas.MemoryAnalyzeRequest, user: dict = Dep
 
 
 @router.get("/{memory_id}", response_model=schemas.MemoryDB)
-async def get_memory(memory_id: str, user: dict | None = Depends(verify_firebase_token_optional)):
+async def get_memory(memory_id: str, user: dict = Depends(verify_firebase_token)):
 	"""Get a specific memory by ID."""
-	memory = crud.get_memory_by_id(memory_id)
+	memory = crud.get_memory_by_id(memory_id, uid=user.get("uid"))
 	if not memory:
 		raise HTTPException(status_code=404, detail="Memory not found")
 	return memory
@@ -133,16 +133,30 @@ async def update_memory(memory_id: str, payload: schemas.MemoryUpdate, user: dic
 	if not updates:
 		raise HTTPException(status_code=400, detail="No updates provided")
 
-	existing = crud.get_memory_by_id(memory_id)
+	existing = crud.get_memory_by_id(memory_id, uid=user.get("uid"))
 	if not existing:
 		raise HTTPException(status_code=404, detail="Memory not found")
 
-	updated = crud.update_memory_by_id(memory_id, updates)
+	updated = crud.update_memory_by_id(memory_id, updates, uid=user.get("uid"))
 	if not updated:
 		raise HTTPException(status_code=500, detail="Failed to update memory")
 
-	memory = crud.get_memory_by_id(memory_id)
+	memory = crud.get_memory_by_id(memory_id, uid=user.get("uid"))
 	if not memory:
 		raise HTTPException(status_code=404, detail="Memory not found")
 
 	return memory
+
+
+@router.delete("/{memory_id}")
+async def delete_memory(memory_id: str, user: dict = Depends(verify_firebase_token)):
+	"""Delete a specific memory by ID for the authenticated user."""
+	existing = crud.get_memory_by_id(memory_id, uid=user.get("uid"))
+	if not existing:
+		raise HTTPException(status_code=404, detail="Memory not found")
+
+	deleted = crud.delete_memory_by_id(memory_id, uid=user.get("uid"))
+	if not deleted:
+		raise HTTPException(status_code=500, detail="Failed to delete memory")
+
+	return {"status": "deleted", "id": memory_id}

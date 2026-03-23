@@ -1,8 +1,11 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import Link from "next/link"
 import { Card } from "@/components/ui/card"
-import { api, type Memory, type StatsResponse } from "@/lib/api-client"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { api, type Memory, type MoodAnomalyResponse, type StatsResponse, type WeeklyReflectionResponse } from "@/lib/api-client"
 
 const moodEmoji: Record<string, string> = {
   happy: "😊",
@@ -22,16 +25,28 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<StatsResponse | null>(null)
   const [memories, setMemories] = useState<Memory[]>([])
   const [error, setError] = useState("")
+  const [weeklyReflection, setWeeklyReflection] = useState<WeeklyReflectionResponse | null>(null)
+  const [moodAnomaly, setMoodAnomaly] = useState<MoodAnomalyResponse | null>(null)
+  const [question, setQuestion] = useState("")
+  const [isAskingCompanion, setIsAskingCompanion] = useState(false)
+  const [companionAnswer, setCompanionAnswer] = useState("Ask about your memories to get a quick reflection.")
 
   useEffect(() => {
     let mounted = true
 
     async function loadData() {
       try {
-        const [statsRes, memoriesRes] = await Promise.all([api.getStats(), api.getMemories()])
+        const [statsRes, memoriesRes, reflectionRes, anomalyRes] = await Promise.all([
+          api.getStats(),
+          api.getMemories(),
+          api.getWeeklyReflection(),
+          api.getMoodAnomaly(),
+        ])
         if (!mounted) return
         setStats(statsRes)
         setMemories(memoriesRes)
+        setWeeklyReflection(reflectionRes)
+        setMoodAnomaly(anomalyRes)
         setError("")
       } catch (err) {
         if (!mounted) return
@@ -81,6 +96,38 @@ export default function DashboardPage() {
       .map(([tag]) => tag)
   }, [memories])
 
+  const reflectionText = useMemo(() => {
+    const summary = weeklyReflection?.summary || ""
+    const firstStop = summary.indexOf(".")
+    if (firstStop === -1) {
+      return { lead: summary, trail: "" }
+    }
+
+    return {
+      lead: summary.slice(0, firstStop + 1),
+      trail: summary.slice(firstStop + 1).trim(),
+    }
+  }, [weeklyReflection?.summary])
+
+  const handleAskCompanion = async () => {
+    const prompt = question.trim().toLowerCase()
+    if (!prompt) {
+      setCompanionAnswer("Type a question first, for example: 'What stressed me this week?'")
+      return
+    }
+
+    setIsAskingCompanion(true)
+    try {
+      const response = await api.companionChat(prompt)
+      setCompanionAnswer(response.answer)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not fetch companion response"
+      setCompanionAnswer(message)
+    } finally {
+      setIsAskingCompanion(false)
+    }
+  }
+
   return (
     <main className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 pb-24">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -103,8 +150,64 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           <Card className="glass-gradient-primary border-0 p-6 space-y-4 md:col-span-2">
             <p className="text-sm text-muted-foreground">AI Insights</p>
-            <div className="pt-2 border-t border-border/50">
-              <p className="text-sm font-medium">Coming soon</p>
+            <div className="pt-2 border-t border-border/50 space-y-3">
+              <div>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Weekly Reflection</p>
+                <div className="mt-2 rounded-xl border border-primary/20 bg-background/40 p-3 md:p-4 space-y-3">
+                  {weeklyReflection ? (
+                    <>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="px-2 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary">
+                          Mood: {weeklyReflection.dominant_mood}
+                        </span>
+                        <span className="px-2 py-1 rounded-full text-[11px] font-semibold bg-accent/10 text-accent">
+                          Entries: {weeklyReflection.total_entries}
+                        </span>
+                        <span className="px-2 py-1 rounded-full text-[11px] font-medium bg-muted text-muted-foreground">
+                          {weeklyReflection.period_start} → {weeklyReflection.period_end}
+                        </span>
+                      </div>
+
+                      {weeklyReflection.top_topics.length > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Topics: <span className="font-semibold text-foreground">{weeklyReflection.top_topics.join(", ")}</span>
+                        </p>
+                      )}
+
+                      <p className="text-sm leading-relaxed">
+                        <span className="font-semibold text-foreground">{reflectionText.lead || "Weekly reflection is ready."}</span>{" "}
+                        {reflectionText.trail && <span className="font-light italic text-muted-foreground">{reflectionText.trail}</span>}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm italic text-muted-foreground">Weekly reflection is loading...</p>
+                  )}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Mood Anomaly Alert</p>
+                <p className="text-sm mt-1">{moodAnomaly?.summary || "Mood anomaly model is warming up..."}</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Memory Companion</p>
+                <div className="flex gap-2">
+                  <Input
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    placeholder="Ask: what stressed me this week?"
+                    className="bg-background/40 border-primary/20"
+                  />
+                  <Button onClick={handleAskCompanion} disabled={isAskingCompanion} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                    {isAskingCompanion ? "Thinking..." : "Ask"}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">{companionAnswer}</p>
+                <Link href="/companion" className="inline-flex">
+                  <Button variant="outline" size="sm" className="border-primary/30 hover:bg-primary/5 bg-transparent">
+                    Open Companion
+                  </Button>
+                </Link>
+              </div>
             </div>
           </Card>
 

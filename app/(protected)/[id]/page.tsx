@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,10 +12,12 @@ import { api, type Memory } from "@/lib/api-client"
 
 export default function MemoryDetailPage() {
   const params = useParams<{ id: string }>()
+  const router = useRouter()
   const memoryId = Array.isArray(params?.id) ? params.id[0] : params?.id
   const [isEditing, setIsEditing] = useState(false)
   const [memory, setMemory] = useState<Memory | null>(null)
   const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [draftContent, setDraftContent] = useState("")
   const [draftSummary, setDraftSummary] = useState("")
@@ -65,6 +67,12 @@ export default function MemoryDetailPage() {
     return "NLP processed this memory, but no strong topic signal was found."
   }, [memory])
 
+  useEffect(() => {
+    if (!success) return
+    const timer = window.setTimeout(() => setSuccess(""), 2500)
+    return () => window.clearTimeout(timer)
+  }, [success])
+
   async function handleSaveChanges() {
     if (!memory) return
 
@@ -94,6 +102,51 @@ export default function MemoryDetailPage() {
       setError(message)
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  async function handleDeleteMemory() {
+    if (!memory) return
+
+    const confirmed = window.confirm("Delete this memory permanently?")
+    if (!confirmed) return
+
+    setError("")
+    setSuccess("")
+    try {
+      await api.deleteMemory(memory.id)
+      router.push("/timeline")
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to delete memory"
+      setError(message)
+    }
+  }
+
+  async function handleShareMemory() {
+    if (!memory) return
+
+    const shareUrl = `${window.location.origin}/${memory.id}`
+    const shareText = memory.ai_summary || memory.content || "Memory from Digital Memory Jar"
+
+    setError("")
+    setSuccess("")
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Memory from Digital Memory Jar",
+          text: shareText,
+          url: shareUrl,
+        })
+        setSuccess("Memory shared successfully")
+        return
+      }
+
+      await navigator.clipboard.writeText(`${shareText}\n\n${shareUrl}`)
+      setSuccess("Share text copied to clipboard")
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to share memory"
+      setError(message)
     }
   }
 
@@ -130,7 +183,12 @@ export default function MemoryDetailPage() {
             >
               <Edit2 size={16} />
             </Button>
-            <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-foreground">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleDeleteMemory}
+              className="text-muted-foreground hover:text-destructive"
+            >
               <Trash2 size={16} />
             </Button>
           </div>
@@ -139,6 +197,12 @@ export default function MemoryDetailPage() {
         {error && (
           <Card className="glass border-destructive/30 p-4">
             <p className="text-sm text-destructive">{error}</p>
+          </Card>
+        )}
+
+        {success && (
+          <Card className="glass border-green-500/30 p-4">
+            <p className="text-sm text-green-600 dark:text-green-400">{success}</p>
           </Card>
         )}
 
@@ -223,7 +287,11 @@ export default function MemoryDetailPage() {
         )}
 
         <div className="flex gap-3 pt-4">
-          <Button variant="outline" className="flex-1 border-primary/30 hover:bg-primary/5 bg-transparent">
+          <Button
+            onClick={handleShareMemory}
+            variant="outline"
+            className="flex-1 border-primary/30 hover:bg-primary/5 bg-transparent"
+          >
             <Share2 size={16} className="mr-2" />
             Share
           </Button>

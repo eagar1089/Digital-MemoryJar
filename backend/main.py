@@ -10,7 +10,7 @@ from pathlib import Path
 load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
 load_dotenv()
 
-from backend.routers import auth, memories, dashboard, spotify
+from backend.routers import auth, memories, dashboard, spotify, ai_features
 from backend.nlp_processor import process_unprocessed_memories
 
 # Configure logging
@@ -56,33 +56,56 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(memories.router, prefix="/memories", tags=["memories"])
 app.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 app.include_router(spotify.router, prefix="/spotify", tags=["spotify"])
+app.include_router(ai_features.router, prefix="/ai", tags=["ai"])
 
 
-# # Background scheduler for processing unprocessed memories
-# scheduler = BackgroundScheduler()
+scheduler = BackgroundScheduler()
 
-# def process_memories_job():
-#     """Job that runs every 10 seconds to process unprocessed memories."""
-#     try:
-#         # logger.info("Running memory processing job...")
-#         process_unprocessed_memories()
-#         # logger.info("Memory processing job completed.")
-#     except Exception as e:
-#         logger.error(f"Error in memory processing job: {e}")
 
-# scheduler.add_job(process_memories_job, "interval", seconds=10, id="process_memories")
-# scheduler.start()
+def _scheduler_enabled() -> bool:
+    return os.getenv("ENABLE_NLP_SCHEDULER", "false").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _scheduler_interval_seconds() -> int:
+    value = os.getenv("NLP_SCHEDULER_INTERVAL_SECONDS", "30")
+    try:
+        seconds = int(value)
+        return max(seconds, 10)
+    except ValueError:
+        return 30
+
+
+def process_memories_job():
+    """Job that processes unprocessed memories in the background."""
+    try:
+        process_unprocessed_memories()
+    except Exception as e:
+        logger.error(f"Error in memory processing job: {e}")
 
 
 @app.on_event("startup")
 def startup_event():
-    logger.info("*********************************Application startup - scheduler running*********************************")
+    if _scheduler_enabled():
+        scheduler.add_job(
+            process_memories_job,
+            "interval",
+            seconds=_scheduler_interval_seconds(),
+            id="process_memories",
+            replace_existing=True,
+        )
+        scheduler.start()
+        logger.info("Application startup - NLP scheduler running")
+    else:
+        logger.info("Application startup - NLP scheduler disabled")
 
 
 @app.on_event("shutdown")
 def shutdown_event():
-    # scheduler.shutdown()
-    logger.info("*********************************Application shutdown - scheduler stopped*********************************")
+    if scheduler.running:
+        scheduler.shutdown()
+        logger.info("Application shutdown - NLP scheduler stopped")
+    else:
+        logger.info("Application shutdown")
 
 
 if __name__ == "__main__":

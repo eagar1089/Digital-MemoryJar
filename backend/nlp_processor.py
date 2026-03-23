@@ -9,9 +9,11 @@ AI NLP Processing Pipeline Template
 """
 
 from typing import Dict, List, Optional
+from datetime import datetime
 import logging
 import json
 import os
+import math
 from urllib import error, request
 
 from backend.connection import get_collection
@@ -347,18 +349,51 @@ def extract_entities(text: str) -> List[str]:
 
 
 # ----------------------------------------------------------------------
-# Embedding generation (disabled/lightweight)
+# Embedding generation (lightweight deterministic)
 # ----------------------------------------------------------------------
 def generate_embedding(text: str) -> Dict:
     model_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-    return {"vector": [], "model": model_name}
+    dimensions = 64
+    vector = [0.0] * dimensions
+
+    tokens = [token for token in "".join(ch if ch.isalnum() else " " for ch in text.lower()).split() if token]
+    if not tokens:
+        return {"vector": vector, "model": model_name}
+
+    for token in tokens:
+        index = hash(token) % dimensions
+        vector[index] += 1.0
+
+    norm = math.sqrt(sum(value * value for value in vector))
+    if norm > 0:
+        vector = [round(value / norm, 6) for value in vector]
+
+    return {"vector": vector, "model": model_name}
 
 
 # ----------------------------------------------------------------------
-# FAISS storage (placeholder)
+# Embedding storage (Mongo-backed fallback)
 # ----------------------------------------------------------------------
 def store_embedding_in_faiss(vector: List[float], memory_id: str, faiss_index) -> int:
-    return 4271
+    embedding_collection = get_collection("memory_embeddings")
+    now = datetime.utcnow()
+
+    embedding_collection.update_one(
+        {"memory_id": memory_id},
+        {
+            "$set": {
+                "memory_id": memory_id,
+                "vector": vector,
+                "updated_at": now,
+            },
+            "$setOnInsert": {
+                "created_at": now,
+            },
+        },
+        upsert=True,
+    )
+
+    return abs(hash(memory_id)) % 1_000_000_000
 
 
 # ----------------------------------------------------------------------

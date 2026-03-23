@@ -7,3 +7,15 @@ pymongo==4.16.0
 python-dotenv==1.2.1
 uvicorn==0.41.0
 wrapt==2.1.1
+
+# NLP & AI Processing
+transformers==4.36.2
+torch==2.1.2
+sentence-transformers==2.2.2
+spacy==3.7.2
+nltk==3.8.1
+scikit-learn==1.3.2
+
+# Optional: For advanced keyword extraction
+keybert==0.8.3
+PY-STRING-SIMILARITY==0.4.0

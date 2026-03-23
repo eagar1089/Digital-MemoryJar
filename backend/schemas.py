@@ -86,3 +86,35 @@ class SpotifySuggestResponse(BaseModel):
     query: str
     primary: SpotifyTrack
     alternatives: List[SpotifyTrack] = Field(default_factory=list)
+
+
+class WeeklyReflectionResponse(BaseModel):
+    period_start: str
+    period_end: str
+    total_entries: int
+    dominant_mood: str
+    top_topics: List[str] = Field(default_factory=list)
+    summary: str
+
+
+class MoodAnomalyResponse(BaseModel):
+    level: str
+    summary: str
+    recent_negative_ratio: float
+    baseline_negative_ratio: float
+    recent_entries: int
+
+
+class CompanionChatRequest(BaseModel):
+    question: str = Field(..., min_length=2, description="User question about memory history")
+
+
+class CompanionReference(BaseModel):
+    memory_id: str
+    created_at: str
+    snippet: str
+
+
+class CompanionChatResponse(BaseModel):
+    answer: str
+    references: List[CompanionReference] = Field(default_factory=list)
