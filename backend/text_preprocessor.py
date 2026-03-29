@@ -12,6 +12,7 @@ flow: User Input → Normalize → Tokenize → Lemmatize → Store → AI Model
 
 import re
 import string
+import os
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 import logging
@@ -33,6 +34,11 @@ logger = logging.getLogger(__name__)
 
 # Global cache for spaCy model (load once, reuse)
 _nlp_model: Optional[Language] = None
+_spacy_download_attempted = False
+
+
+def _spacy_disabled_by_env() -> bool:
+    return os.getenv("DISABLE_SPACY", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def load_nlp_pipeline() -> Language:
@@ -45,11 +51,14 @@ def load_nlp_pipeline() -> Language:
     Returns:
         spacy Language model instance
     """
-    global _nlp_model
+    global _nlp_model, _spacy_download_attempted
     
     if _nlp_model is not None:
         return _nlp_model
     
+    if _spacy_disabled_by_env():
+        raise RuntimeError("spaCy explicitly disabled by environment")
+
     if not SPACY_AVAILABLE:
         raise RuntimeError("spaCy not installed.")
     
@@ -59,17 +68,20 @@ def load_nlp_pipeline() -> Language:
         logger.info("Loaded spaCy model: en_core_web_sm")
         return _nlp_model
     except OSError:
-        # Model not found, try to download
-        logger.info("Downloading en_core_web_sm model...")
-        ################################################################################3
-        # import subprocess
-        # subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=True)
-        import sys, subprocess
-        subprocess.run([sys.executable, "-m", "spacy", "download", "en_core_web_sm"], check=True)
+        if _spacy_download_attempted:
+            raise RuntimeError("spaCy model en_core_web_sm unavailable; download already attempted")
 
-        _nlp_model = spacy.load("en_core_web_sm")
-        logger.info("ownloaded and loaded en_core_web_sm")
-        return _nlp_model
+        _spacy_download_attempted = True
+        logger.info("spaCy model not found. Attempting one-time download: en_core_web_sm")
+        try:
+            from spacy.cli import download as spacy_download
+            spacy_download("en_core_web_sm")
+            _nlp_model = spacy.load("en_core_web_sm")
+            logger.info("Downloaded and loaded en_core_web_sm")
+            return _nlp_model
+        except Exception as download_error:
+            logger.warning("spaCy model download failed; using lightweight mode. Error: %s", download_error)
+            raise RuntimeError("spaCy model download failed") from download_error
 
 
 class TextPreprocessor:
@@ -77,7 +89,12 @@ class TextPreprocessor:
     
     def __init__(self):
         """Initialize preprocessor with spaCy pipeline if available, else use lightweight mode."""
-        if SPACY_AVAILABLE:
+        if _spacy_disabled_by_env():
+            self.nlp = None
+            self.stop_words = self._get_basic_stopwords()
+            self.use_spacy = False
+            logger.info("TextPreprocessor initialized with spaCy disabled by env (lightweight mode)")
+        elif SPACY_AVAILABLE:
             try:
                 self.nlp = load_nlp_pipeline()
                 self.stop_words = self.nlp.Defaults.stop_words
