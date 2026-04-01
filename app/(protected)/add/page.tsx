@@ -242,16 +242,19 @@ export default function AddMemoryPage() {
   }
 
   const moodEmojis: Record<string, string> = {
-    reflective: "🤔",
     happy: "😊",
     calm: "🌿",
+    reflective: "🤔",
     peaceful: "🌙",
+    excited: "🎉",
+    grateful: "🙏",
     neutral: "📝",
-    sadness: "😔",
-    anger: "😠",
-    fear: "😟",
-    surprise: "😮",
-    disgust: "🤢",
+    joy: "😊",
+    sadness: "📝",
+    anger: "📝",
+    fear: "📝",
+    surprise: "🎉",
+    disgust: "📝",
   }
 
   return (

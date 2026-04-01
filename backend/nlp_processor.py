@@ -35,6 +35,14 @@ def _get_hf_timeout_seconds() -> int:
         return 20
 
 
+def _get_hf_emotion_model_id() -> str:
+    return os.getenv("HF_EMOTION_MODEL", "j-hartmann/emotion-english-distilroberta-base").strip()
+
+
+def _get_hf_topic_model_id() -> str:
+    return os.getenv("HF_TOPIC_MODEL", "facebook/bart-large-mnli").strip()
+
+
 def _hf_inference_endpoints(model_id: str) -> List[str]:
     explicit_base = os.getenv("HF_INFERENCE_BASE_URL", "").strip().rstrip("/")
     endpoints: List[str] = []
@@ -171,6 +179,51 @@ def _neutral_emotion_scores() -> Dict[str, float]:
     }
 
 
+FALLBACK_EMOTION_KEYWORDS = {
+    "joy": [
+        "happy", "joy", "grateful", "excited", "peaceful", "calm", "good", "great", "love", "relaxed",
+        "productive", "proud", "hopeful", "content",
+    ],
+    "sadness": [
+        "sad", "down", "lonely", "empty", "tired", "cry", "hopeless", "upset", "depressed", "hurt",
+    ],
+    "anger": [
+        "angry", "mad", "furious", "annoyed", "frustrated", "irritated", "rage", "hate",
+    ],
+    "fear": [
+        "afraid", "fear", "anxious", "worried", "panic", "nervous", "scared", "stress", "stressed",
+    ],
+    "surprise": [
+        "surprised", "unexpected", "suddenly", "shocked", "amazed", "wow",
+    ],
+    "disgust": [
+        "disgust", "gross", "nasty", "awful", "sick", "uncomfortable",
+    ],
+}
+
+
+def _fallback_emotion_scores(text: str) -> Dict[str, float]:
+    scores = _neutral_emotion_scores()
+    normalized = "".join(ch.lower() if ch.isalnum() or ch.isspace() else " " for ch in text)
+    tokens = [token for token in normalized.split() if token]
+    if not tokens:
+        return scores
+
+    for emotion, keywords in FALLBACK_EMOTION_KEYWORDS.items():
+        count = 0
+        for token in tokens:
+            if token in keywords:
+                count += 1
+        if count > 0:
+            scores[emotion] = float(count)
+
+    total = sum(scores.values())
+    if total <= 0:
+        return scores
+
+    return {label: round(value / total, 4) for label, value in scores.items()}
+
+
 def dominant_mood_from_scores(emotion_scores: Optional[Dict[str, float]]) -> str:
     if not emotion_scores:
         return "neutral"
@@ -221,13 +274,14 @@ def extract_emotion_scores(text: str) -> Dict[str, float]:
 
     hf_api_token = os.getenv("HF_API_TOKEN")
     if not hf_api_token:
-        logger.warning("HF_API_TOKEN missing. Returning default emotion scores.")
-        return _neutral_emotion_scores()
+        logger.warning("HF_API_TOKEN missing. Using fallback lexical emotion scoring.")
+        return _fallback_emotion_scores(text)
 
     hf_timeout_seconds = _get_hf_timeout_seconds()
+    model_id = _get_hf_emotion_model_id()
     body = json.dumps({"inputs": text, "options": {"wait_for_model": True}}).encode("utf-8")
 
-    for endpoint in _hf_inference_endpoints("AnasAlokla/multilingual_go_emotions"):
+    for endpoint in _hf_inference_endpoints(model_id):
         req = request.Request(
             endpoint,
             data=body,
@@ -257,7 +311,8 @@ def extract_emotion_scores(text: str) -> Dict[str, float]:
         except Exception as e:
             logger.warning("HF emotion scoring error via %s: %s", endpoint, str(e))
 
-    return _neutral_emotion_scores()
+    logger.warning("Hugging Face emotion inference unavailable. Using fallback lexical emotion scoring.")
+    return _fallback_emotion_scores(text)
 
 
 # ----------------------------------------------------------------------
@@ -313,7 +368,7 @@ def categorize_topics(text: str, keywords: List[str]) -> List[str]:
         return _fallback_topic_classification(text)
 
     hf_timeout = _get_hf_timeout_seconds()
-    model_id = "joeddav/xlm-roberta-large-xnli"
+    model_id = _get_hf_topic_model_id()
 
     try:
         body = json.dumps(

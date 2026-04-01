@@ -52,6 +52,12 @@ export default function MemoryDetailPage() {
     excited: "🎉",
     grateful: "🙏",
     neutral: "📝",
+    joy: "😊",
+    sadness: "📝",
+    anger: "📝",
+    fear: "📝",
+    surprise: "🎉",
+    disgust: "📝",
   }
 
   const aiInsight = useMemo(() => {

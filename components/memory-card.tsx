@@ -10,12 +10,19 @@ interface MemoryCardProps {
 }
 
 const moodEmojis: Record<string, string> = {
-  reflective: "🤔",
   happy: "😊",
   calm: "🌿",
+  reflective: "🤔",
   peaceful: "🌙",
   excited: "🎉",
   grateful: "🙏",
+  neutral: "📝",
+  joy: "😊",
+  sadness: "📝",
+  anger: "📝",
+  fear: "📝",
+  surprise: "🎉",
+  disgust: "📝",
 }
 
 export function MemoryCard({ id, date, summary, mood, tags }: MemoryCardProps) {

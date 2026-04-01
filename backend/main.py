@@ -23,7 +23,7 @@ app = FastAPI(title="DMJ Backend")
 # You can override with CORS_ALLOW_ORIGINS="http://localhost:3000,http://127.0.0.1:3001"
 configured_origins = [
     origin.strip()
-    for origin in os.getenv("CORS_ALLOW_ORIGINS","https://v0-djjv2.vercel.app,https://dmemoryjar.vercel.app/").split(",")
+    for origin in os.getenv("CORS_ALLOW_ORIGINS","https://v0-djjv2.vercel.app,https://dmemoryjar.vercel.app").split(",")
     if origin.strip()
 ]
 

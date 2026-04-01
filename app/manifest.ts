@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next"
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Digital Memory Jar",
-    short_name: "DMJ",
+    short_name: "Memory Jar",
     description: "AI-powered personal life logger",
     start_url: "/home",
     display: "standalone",

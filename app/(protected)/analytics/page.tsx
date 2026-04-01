@@ -7,16 +7,19 @@ import { api, type Memory, type StatsResponse } from "@/lib/api-client"
 type MoodDistributionItem = { name: string; value: number; emoji: string }
 
 const moodEmojis: Record<string, string> = {
-  joy: "😊",
   happy: "😊",
   calm: "🌿",
   reflective: "🤔",
   peaceful: "🌙",
-  sadness: "😔",
-  anger: "😠",
-  fear: "😨",
-  surprise: "😮",
-  disgust: "😖",
+  excited: "🎉",
+  grateful: "🙏",
+  neutral: "📝",
+  joy: "😊",
+  sadness: "📝",
+  anger: "📝",
+  fear: "📝",
+  surprise: "🎉",
+  disgust: "📝",
 }
 
 export default function DashboardPage() {

@@ -9,16 +9,19 @@ import { api, type Memory, type StatsResponse } from "@/lib/api-client"
 import { Plus, Sparkles, TrendingUp } from "lucide-react"
 
 const moodEmojis: Record<string, string> = {
-  calm: "🌿",
   happy: "😊",
+  calm: "🌿",
   reflective: "🤔",
   peaceful: "🌙",
-  sadness: "😔",
-  anger: "😠",
-  fear: "😟",
-  surprise: "😮",
-  disgust: "🤢",
+  excited: "🎉",
+  grateful: "🙏",
   neutral: "📝",
+  joy: "😊",
+  sadness: "📝",
+  anger: "📝",
+  fear: "📝",
+  surprise: "🎉",
+  disgust: "📝",
 }
 
 type SongPick = { title: string; artist: string; query: string }
