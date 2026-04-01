@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { onAuthStateChanged, signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import Link from "next/link"
+import Image from "next/image"
 import { LogOut } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 
@@ -49,9 +50,9 @@ export default function ProtectedLayout({
           <div className="flex items-center">
             <Link
               href="/home"
-              className="text-2xl font-bold text-gradient-brand px-3 py-2 rounded-md"
+              className="px-3 py-2 rounded-md"
             >
-              DMJ
+              <Image src="/logo.png" alt="Digital Memory Jar Logo" width={40} height={40} className="h-10 w-10" />
             </Link>
           </div>
 
