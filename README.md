@@ -1,58 +1,97 @@
-# Digital Memory Jar – AI-Powered Personal Life Logger
+# Digital Memory Jar
+
+Digital Memory Jar is an AI-powered journaling platform that helps users record thoughts, emotions, and reflections, then turns those entries into useful insights through NLP, analytics, and mood-aware recommendations.
 
 ## Overview
-**Digital Memory Jar** is a modern AI-powered journaling platform designed to help users record their daily thoughts, emotions, and reflections with ease.  
-It transforms traditional journaling into a smart digital experience using **Natural Language Processing (NLP)** and **Sentiment Analysis** to provide meaningful insights, summaries, and mood tracking.  
 
-The project focuses on mental well-being and self-reflection by allowing users to log entries, visualize emotional trends, and access their personal growth history in a private and intelligent way.
+The project is split into two main parts:
 
----
-
-## Key Features
-- **Smart Journaling**: Add daily entries through text or voice.
-- **AI-Powered Summaries**: Automatically generate short summaries using NLP.
-- **Mood Detection**: Analyze emotional tone using sentiment analysis.
-- **Visual Dashboard**: View trends, mood charts, and timelines.
-- **Secure Cloud Storage**: Data stored safely using Firebase or MongoDB Atlas.
-- **Progressive Web App (PWA)**: Optimized for mobile and desktop.
-- **User Authentication**: Google or email sign-in with Firebase Authentication.
-- **Modern UI**: Calm, minimal, and glassmorphic design inspired by Gemini-style aesthetics.
-
----
-
-## Tech Stack
-
-### Frontend
-- **Framework**: React / Next.js  
-- **Styling**: Tailwind CSS  
-- **PWA Support**: Service Workers and Manifest configuration  
+### UI
+- Built with Next.js 14, React, TypeScript, and Tailwind CSS.
+- Provides a glassmorphic interface for journaling, analytics, timeline browsing, and the AI companion.
+- Includes PWA support with a manifest, service worker, and offline page.
+- Supports text entry, voice input, memory browsing, dashboard analytics, and Spotify-based mood suggestions.
 
 ### Backend
-- **API Framework**: Python (FastAPI or Flask)  
-- **NLP & AI Models**: Hugging Face Transformers (BART, DistilBERT)  
-- **Sentiment Analysis**: VADER or Transformer-based Emotion Model  
+- Built with FastAPI and Python.
+- Handles authentication, memory CRUD, AI analysis, weekly reflection, mood anomaly detection, companion chat, and Spotify suggestions.
+- Uses a background NLP scheduler for asynchronous processing of memories.
+- Runs a multilingual NLP pipeline for preprocessing, emotion scoring, keyword extraction, topic classification, and embedding generation.
 
-### Database & Cloud
-- **Firebase Firestore** or **MongoDB Atlas**  
-- **Authentication**: Firebase Auth  
-- **Deployment**: Vercel (Frontend) & Render (Backend)
+## Hosted Setup
 
----
+- Frontend: hosted on Vercel
+- Backend: hosted on Hugging Face Spaces
+- Database: MongoDB Atlas
 
-## System Architecture
-The system follows a **client-server architecture**:
-1. **Frontend (React/Next.js)** – user interactions and dashboard visualization.  
-2. **Backend (FastAPI/Flask)** – handles AI processing, summaries, and sentiment detection.  
-3. **Database (Firestore/MongoDB)** – stores user entries, moods, and summaries securely.  
+## Key Features
 
-Data Flow:  
-User Entry → Backend API → NLP Processing → Summary + Sentiment → Database → Dashboard Visualization
+- Secure Firebase-based authentication
+- Create, update, delete, and browse journal memories
+- AI memory analysis with mood detection, keywords, topics, and summaries
+- Weekly reflection and mood anomaly insights
+- AI companion chat grounded in past memories
+- Spotify music suggestions based on emotional context
+- Timeline and analytics dashboards
+- Voice input for journaling
+- Progressive Web App support
 
----
+## Technology Stack
 
-## Setup Instructions
+### UI
+- Next.js 14 App Router
+- React 18
+- TypeScript
+- Tailwind CSS
+- shadcn/ui components
+- Recharts for analytics visualizations
 
-### 1. Clone the Repository
+### Backend
+- FastAPI
+- APScheduler for background jobs
+- Hugging Face inference APIs
+- Firebase Admin SDK for token verification
+- Python NLP utilities and preprocessing
+
+### Data and Services
+- MongoDB Atlas
+- Spotify Web API
+- Hugging Face Spaces
+- Vercel
+
+## Architecture
+
+1. The user writes a memory in the UI.
+2. The frontend sends the entry to the FastAPI backend.
+3. The backend stores the memory in MongoDB.
+4. The NLP pipeline processes the entry asynchronously.
+5. Enriched insights are returned to analytics, timeline, and companion screens.
+6. Spotify suggestions are generated from mood and context signals.
+
+## Local Development
+
+### Frontend
 ```bash
-git clone https://github.com/yourusername/digital-memory-jar.git
-cd digital-memory-jar
+npm install
+npm run dev
+```
+
+### Backend
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+
+## Environment Notes
+
+- Set `NEXT_PUBLIC_API_URL` for the frontend.
+- Set `MONGO_URI` for MongoDB.
+- Set Firebase credentials for authentication.
+- Set Hugging Face and Spotify secrets where needed.
+
+## Project Goal
+
+The goal of Digital Memory Jar is to combine journaling, affective computing, and multilingual NLP into a practical wellness tool with a modern user experience and a production-oriented backend.
