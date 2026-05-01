@@ -1,74 +1,62 @@
 # Digital Memory Jar
 
-Digital Memory Jar is an AI-powered journaling platform that helps users record thoughts, emotions, and reflections, then turns those entries into useful insights through NLP, analytics, and mood-aware recommendations.
+Digital Memory Jar is an AI-powered journaling app that turns memories into insights with emotion analysis, mood-aware recommendations, and a clean glassmorphic interface.
 
-## Overview
+## At a Glance
 
-The project is split into two main parts:
+- Frontend: Next.js 14, React, TypeScript, Tailwind CSS
+- Backend: FastAPI, Python, APScheduler
+- Data: MongoDB Atlas
+- AI: Hugging Face, multilingual NLP, Spotify suggestions
 
-### UI
-- Built with Next.js 14, React, TypeScript, and Tailwind CSS.
-- Provides a glassmorphic interface for journaling, analytics, timeline browsing, and the AI companion.
-- Includes PWA support with a manifest, service worker, and offline page.
-- Supports text entry, voice input, memory browsing, dashboard analytics, and Spotify-based mood suggestions.
+## What It Does
 
-### Backend
-- Built with FastAPI and Python.
-- Handles authentication, memory CRUD, AI analysis, weekly reflection, mood anomaly detection, companion chat, and Spotify suggestions.
-- Uses a background NLP scheduler for asynchronous processing of memories.
-- Runs a multilingual NLP pipeline for preprocessing, emotion scoring, keyword extraction, topic classification, and embedding generation.
+- Lets users write memories with text or voice
+- Analyzes mood, keywords, topics, entities, and summaries
+- Shows trends in dashboard and timeline views
+- Supports AI companion chat grounded in past entries
+- Suggests music based on emotional context
+- Works as a PWA with offline support
 
-## Hosted Setup
+## Screenshots
 
-- Frontend: hosted on Vercel
-- Backend: hosted on Hugging Face Spaces
-- Database: MongoDB Atlas
+<details>
+<summary><b>Open UI Screenshots</b></summary>
 
-## Key Features
+| Main Dashboard | Add Memory |
+| --- | --- |
+| <img src="DMj-Figures/Screenshots/MainDashboard.jpg" alt="Main Dashboard" width="100%" /> | <img src="DMj-Figures/Screenshots/AddMemory.jpg" alt="Add Memory" width="100%" /> |
 
-- Secure Firebase-based authentication
-- Create, update, delete, and browse journal memories
-- AI memory analysis with mood detection, keywords, topics, and summaries
-- Weekly reflection and mood anomaly insights
-- AI companion chat grounded in past memories
-- Spotify music suggestions based on emotional context
-- Timeline and analytics dashboards
-- Voice input for journaling
-- Progressive Web App support
+| Analytics | Timeline |
+| --- | --- |
+| <img src="DMj-Figures/Screenshots/Analytics.jpg" alt="Analytics" width="100%" /> | <img src="DMj-Figures/Screenshots/Timeline.jpg" alt="Timeline" width="100%" /> |
 
-## Technology Stack
+| Settings |
+| --- |
+| <img src="DMj-Figures/Screenshots/Settings.jpg" alt="Settings" width="100%" /> |
 
-### UI
-- Next.js 14 App Router
-- React 18
-- TypeScript
-- Tailwind CSS
-- shadcn/ui components
-- Recharts for analytics visualizations
+</details>
 
-### Backend
-- FastAPI
-- APScheduler for background jobs
-- Hugging Face inference APIs
-- Firebase Admin SDK for token verification
-- Python NLP utilities and preprocessing
+## Key Figures
 
-### Data and Services
-- MongoDB Atlas
-- Spotify Web API
-- Hugging Face Spaces
-- Vercel
+<details>
+<summary><b>Open Architecture Figures</b></summary>
 
-## Architecture
+| Architecture | Deployment |
+| --- | --- |
+| <img src="DMj-Figures/DiagramsAndFigures/AcrchitectureDiagram.png" alt="Architecture Diagram" width="100%" /> | <img src="DMj-Figures/DiagramsAndFigures/DeploymentDiagram.png" alt="Deployment Diagram" width="100%" /> |
 
-1. The user writes a memory in the UI.
-2. The frontend sends the entry to the FastAPI backend.
-3. The backend stores the memory in MongoDB.
-4. The NLP pipeline processes the entry asynchronously.
-5. Enriched insights are returned to analytics, timeline, and companion screens.
-6. Spotify suggestions are generated from mood and context signals.
+| Use Case | Data Flow |
+| --- | --- |
+| <img src="DMj-Figures/DiagramsAndFigures/UseCase.png" alt="Use Case Diagram" width="100%" /> | <img src="DMj-Figures/DiagramsAndFigures/DFD-Lvl0.png" alt="DFD Level 0" width="100%" /> |
 
-## Local Development
+| Class Diagram | Sequence Diagram |
+| --- | --- |
+| <img src="DMj-Figures/DiagramsAndFigures/ClassDiagram1.png" alt="Class Diagram" width="100%" /> | <img src="DMj-Figures/DiagramsAndFigures/SequenceDiagram-MemProcessing.png" alt="Sequence Diagram" width="100%" /> |
+
+</details>
+
+## Setup
 
 ### Frontend
 ```bash
@@ -80,18 +68,39 @@ npm run dev
 ```bash
 cd backend
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # On Windows: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-## Environment Notes
+For full backend details, see [backend/README.md](backend/README.md).
 
-- Set `NEXT_PUBLIC_API_URL` for the frontend.
-- Set `MONGO_URI` for MongoDB.
-- Set Firebase credentials for authentication.
-- Set Hugging Face and Spotify secrets where needed.
+## Environment Variables
 
-## Project Goal
+<details>
+<summary><b>Frontend</b></summary>
 
-The goal of Digital Memory Jar is to combine journaling, affective computing, and multilingual NLP into a practical wellness tool with a modern user experience and a production-oriented backend.
+- `NEXT_PUBLIC_API_URL` - Backend API URL
+
+</details>
+
+<details>
+<summary><b>Backend</b></summary>
+
+- `MONGO_URI` - MongoDB connection string
+- `HF_API_TOKEN` - Hugging Face API token
+- `SPOTIFY_CLIENT_ID` - Spotify app client ID
+- `SPOTIFY_CLIENT_SECRET` - Spotify app client secret
+
+</details>
+
+## Deployment
+
+- Frontend: Vercel
+- Backend: Hugging Face Spaces
+- Database: MongoDB Atlas
+
+## Notes
+
+- The repo already includes the screenshots and figures under `DMj-Figures/`.
+- If you add new images later, keep them in the same folder so the README stays consistent.
