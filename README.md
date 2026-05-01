@@ -2,6 +2,14 @@
 
 Digital Memory Jar is an AI-powered journaling app that turns memories into insights with emotion analysis, mood-aware recommendations, and a clean glassmorphic interface.
 
+## Documentation
+
+GitHub shows only this root README on the repository page, so the backend docs are linked here for quick access.
+
+- [Backend README](backend/README.md) - setup, API endpoints, and NLP pipeline details
+- [UI Screenshots](#screenshots) - actual app views from the repo assets
+- [Figures](#key-figures) - architecture, flow, and design diagrams
+
 ## At a Glance
 
 - Frontend: Next.js 14, React, TypeScript, Tailwind CSS
