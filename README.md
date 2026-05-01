@@ -107,6 +107,21 @@ For full backend details, see [backend/README.md](backend/README.md).
 - Frontend: Vercel
 - Backend: Hugging Face Spaces
 - Database: MongoDB Atlas
+- Monitoring: Prometheus + Grafana via Docker Compose
+
+## Monitoring
+
+Run the local observability stack with:
+
+```bash
+docker compose up --build
+```
+
+- Backend metrics: `http://localhost:8000/metrics`
+- Prometheus: `http://localhost:9090`
+- Grafana: `http://localhost:3001` with `admin` / `admin`
+
+The backend exports request latency, request counts, and NLP job metrics for Grafana dashboards.
 
 ## Notes
 
