@@ -26,6 +26,8 @@ uvicorn main:app --reload --port 8000
 
 The API will be available at `http://localhost:8000` with interactive docs at `/docs`.
 
+Prometheus metrics are available at `http://localhost:8000/metrics`.
+
 ---
 
 ## Environment Configuration
@@ -96,6 +98,9 @@ Used for generating mood-aware music recommendations based on emotional context 
 
 ### Music Recommendations
 - `GET /spotify/recommendations` - Get mood-aware Spotify suggestions
+
+### Monitoring
+- `GET /metrics` - Prometheus metrics for Grafana dashboards and alerting
 
 ---
 
@@ -185,6 +190,7 @@ backend/
 - **Database:** MongoDB Atlas for persistence
 - **Authentication:** Firebase Admin SDK for token verification
 - **Deployment:** Hugging Face Spaces (automated via GitHub Actions)
+- **Monitoring:** Prometheus scrape endpoint plus Grafana dashboards via Docker Compose
 
 ---
 

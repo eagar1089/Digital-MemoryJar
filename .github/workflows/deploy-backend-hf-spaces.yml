@@ -1,35 +1,37 @@
-name: Deploy Backend to Hugging Face Spaces
+name: Deploy Backend to Hugging Face Space
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
+    paths: [ "backend/**" ]
+
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        lfs: true
 
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+    - name: Sync to Hugging Face Hub
+      env:
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      run: |
+        git config --global http.https://huggingface.co/.extraheader "Authorization: Bearer $HF_TOKEN"
 
-      - name: Push repository to Hugging Face Space
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_SPACE_REPO: ${{ secrets.HF_SPACE_REPO }}
-        run: |
-          if [ -z "$HF_TOKEN" ] || [ -z "$HF_SPACE_REPO" ]; then
-            echo "Missing HF_TOKEN or HF_SPACE_REPO secret." >&2
-            exit 1
-          fi
+        git clone https://huggingface.co/spaces/$HF_SPACE_REPO temp
 
-          git remote add hf "https://oauth2:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE_REPO}"
-          git push --force hf HEAD:main
+        rm -rf temp/*
+
+        cp -r backend/* temp/
+
+        cd temp
+        git add .
+        git diff --quiet && git diff --staged --quiet || git commit -m "Sync backend from GitHub repo on $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+        git push origin main
