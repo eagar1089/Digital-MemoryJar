@@ -6,14 +6,17 @@ import { motion } from "framer-motion"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import type { Memory } from "@/lib/api-client"
 
-// sample event map: YYYY-MM-DD -> color token
-const events: Record<string, string> = {
-  "2026-01-30": "bg-accent",
-  "2026-02-05": "bg-[color:var(--color-chart-2)]",
+type CalendarCardProps = {
+  memories?: Pick<Memory, "created_at">[]
 }
 
-export default function CalendarCard() {
+function toDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+}
+
+export default function CalendarCard({ memories = [] }: CalendarCardProps) {
   const router = useRouter()
   const today = new Date()
 
@@ -24,7 +27,18 @@ export default function CalendarCard() {
 
   const year = current.getFullYear()
   const month = current.getMonth()
-  const todayKey = today.toISOString().split("T")[0]
+  const todayKey = toDateKey(today)
+
+  const memoryDates = useMemo(() => {
+    const map: Record<string, number> = {}
+
+    for (const memory of memories) {
+      const key = toDateKey(new Date(memory.created_at))
+      map[key] = (map[key] || 0) + 1
+    }
+
+    return map
+  }, [memories])
 
   const { days, monthYear } = useMemo(() => {
     const firstDay = new Date(year, month, 1).getDay()
@@ -56,10 +70,6 @@ export default function CalendarCard() {
     }
     return list
   }, [selectedDate])
-
-  function toDateKey(date: Date): string {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-  }
 
   function selectDate(date: Date) {
     setSelectedDate(date)
@@ -199,18 +209,27 @@ export default function CalendarCard() {
                       animate={isToday ? { scale: [1, 1.08, 1] } : undefined}
                       transition={isToday ? { repeat: Infinity, duration: 1.6 } : undefined}
                       className={
-                        "aspect-square flex items-center justify-center rounded-lg text-sm " +
+                        "aspect-square flex items-center justify-center rounded-lg text-sm transition-all " +
                         (isSelected
-                          ? "bg-primary text-primary-foreground shadow-md"
+                          ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/50"
+                          : memoryDates[key]
+                          ? "bg-primary/10 text-foreground hover:bg-primary/15 border border-primary/30"
                           : "hover:bg-accent hover:text-accent-foreground")
                       }
                     >
-                      {day}
+                      <span className="relative flex items-center justify-center">
+                        {day}
+                        {memoryDates[key] ? (
+                          <span className="absolute -top-1 -right-3 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground shadow-sm">
+                            {memoryDates[key]}
+                          </span>
+                        ) : null}
+                      </span>
                     </motion.div>
 
-                    {events[key] && (
+                    {memoryDates[key] && (
                       <span
-                        className={`absolute bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full ${events[key]}`}
+                        className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-primary"
                       />
                     )}
                   </motion.button>
@@ -230,6 +249,7 @@ export default function CalendarCard() {
               const key = toDateKey(dateObj)
               const isSelected = key === toDateKey(selectedDate)
               const isFuture = dateObj > today
+              const memoryCount = memoryDates[key] || 0
               return (
                 <button
                   type="button"
@@ -237,15 +257,22 @@ export default function CalendarCard() {
                   onClick={() => !isFuture && selectDate(dateObj)}
                   disabled={isFuture}
                   className={
-                    "rounded-lg px-2 py-2 text-center text-xs border transition-colors " +
+                    "rounded-lg px-2 py-2 text-center text-xs border transition-colors relative " +
                     (isFuture
                       ? "opacity-50 border-border cursor-not-allowed"
                       : isSelected
                       ? "bg-primary text-primary-foreground border-primary"
+                      : memoryCount > 0
+                      ? "bg-primary/10 border-primary/30 hover:bg-primary/15"
                       : "hover:bg-accent border-border")
                   }
                 >
                   <p className="font-semibold">{dateObj.getDate()}</p>
+                  {memoryCount > 0 && (
+                    <span className="mt-1 inline-flex items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                      {memoryCount}
+                    </span>
+                  )}
                 </button>
               )
             })}

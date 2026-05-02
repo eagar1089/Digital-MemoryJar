@@ -177,7 +177,7 @@ export default function HomePage() {
           <p className="text-muted-foreground md:text-lg">Let's capture your thoughts today</p>
         </div>
 
-        <CalendarCard />
+        <CalendarCard memories={memories} />
 
         {error && (
           <Card className="glass border-destructive/30 p-4">
