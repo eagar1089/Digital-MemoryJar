@@ -71,6 +71,16 @@ export default function CalendarCard({ memories = [] }: CalendarCardProps) {
     return list
   }, [selectedDate])
 
+  const dayBaseClass =
+    "aspect-square flex items-center justify-center rounded-lg text-sm transition-all border backdrop-blur-sm"
+  const memoryDayClass =
+    "bg-linear-to-br from-primary/20 via-primary/10 to-transparent border-primary/30 shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.28)]"
+  const emptyDayClass =
+    "border-border/60 hover:bg-accent/60 hover:text-accent-foreground"
+  const selectedDayClass =
+    "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/50"
+  const todayRingClass = "ring-1 ring-primary/40"
+
   function selectDate(date: Date) {
     setSelectedDate(date)
     router.push(`/timeline?date=${toDateKey(date)}`)
@@ -88,7 +98,7 @@ export default function CalendarCard({ memories = [] }: CalendarCardProps) {
   }
 
   return (
-    <Card className="w-full max-w-sm rounded-xl bg-card/80 backdrop-blur-md">
+    <Card className="w-full max-w-sm rounded-xl border border-white/20 bg-background/55 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-background/35">
       <CardHeader className="pb-2 flex items-center justify-between">
         <Button size="icon" variant="ghost" onClick={() => changeMonth(-1)}>
           <ChevronLeft />
@@ -209,29 +219,22 @@ export default function CalendarCard({ memories = [] }: CalendarCardProps) {
                       animate={isToday ? { scale: [1, 1.08, 1] } : undefined}
                       transition={isToday ? { repeat: Infinity, duration: 1.6 } : undefined}
                       className={
-                        "aspect-square flex items-center justify-center rounded-lg text-sm transition-all " +
+                        `${dayBaseClass} ` +
                         (isSelected
-                          ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/50"
+                          ? selectedDayClass
                           : memoryDates[key]
-                          ? "bg-primary/10 text-foreground hover:bg-primary/15 border border-primary/30"
-                          : "hover:bg-accent hover:text-accent-foreground")
+                          ? `${memoryDayClass} text-foreground hover:bg-primary/20`
+                          : emptyDayClass) +
+                        (isToday && !isSelected ? ` ${todayRingClass}` : "")
                       }
                     >
                       <span className="relative flex items-center justify-center">
                         {day}
-                        {memoryDates[key] ? (
-                          <span className="absolute -top-1 -right-3 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground shadow-sm">
-                            {memoryDates[key]}
-                          </span>
-                        ) : null}
                       </span>
                     </motion.div>
-
-                    {memoryDates[key] && (
-                      <span
-                        className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-primary"
-                      />
-                    )}
+                    {memoryDates[key] ? (
+                      <span className="absolute bottom-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-primary shadow-[0_0_0_4px_rgba(255,255,255,0.18)] dark:shadow-[0_0_0_4px_rgba(0,0,0,0.22)]" />
+                    ) : null}
                   </motion.button>
                 )
               })}
@@ -257,22 +260,17 @@ export default function CalendarCard({ memories = [] }: CalendarCardProps) {
                   onClick={() => !isFuture && selectDate(dateObj)}
                   disabled={isFuture}
                   className={
-                    "rounded-lg px-2 py-2 text-center text-xs border transition-colors relative " +
+                      "rounded-lg px-2 py-2 text-center text-xs border transition-all relative backdrop-blur-sm " +
                     (isFuture
-                      ? "opacity-50 border-border cursor-not-allowed"
+                        ? "opacity-50 border-border/50 cursor-not-allowed"
                       : isSelected
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : memoryCount > 0
-                      ? "bg-primary/10 border-primary/30 hover:bg-primary/15"
-                      : "hover:bg-accent border-border")
+                        ? "bg-primary text-primary-foreground border-primary shadow-md"
+                        : memoryCount > 0
+                        ? "bg-linear-to-br from-primary/20 via-primary/10 to-transparent border-primary/30 hover:bg-primary/15 shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.28)]"
+                        : "border-border/60 hover:bg-accent/60")
                   }
                 >
                   <p className="font-semibold">{dateObj.getDate()}</p>
-                  {memoryCount > 0 && (
-                    <span className="mt-1 inline-flex items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
-                      {memoryCount}
-                    </span>
-                  )}
                 </button>
               )
             })}

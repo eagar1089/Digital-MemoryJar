@@ -15,6 +15,9 @@ load_dotenv()
 
 from backend.routers import auth, memories, dashboard, spotify, ai_features
 from backend.nlp_processor import process_unprocessed_memories
+from backend.nlp_processor import _hf_inference_endpoints, _get_hf_emotion_model_id, _get_hf_timeout_seconds
+from urllib import request as _urlrequest, error as _urlerror
+import json as _json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -98,6 +101,56 @@ def health():
 @app.get("/metrics")
 def metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
+@app.get("/ai/model-health")
+def model_health():
+    """Lightweight model availability check.
+
+    - If `HF_API_TOKEN` is not set the endpoint reports `degraded` (fallbacks used).
+    - If set, the endpoint will attempt a short inference call to the configured emotion model
+      via the available inference endpoints and return `ok` if any respond successfully.
+    """
+    hf_token = os.getenv("HF_API_TOKEN")
+    if not hf_token:
+        return {"status": "degraded", "reason": "HF_API_TOKEN not set; using local fallbacks"}
+
+    model_id = _get_hf_emotion_model_id()
+    endpoints = _hf_inference_endpoints(model_id)
+    timeout = min(_get_hf_timeout_seconds(), 5)
+
+    body = _json.dumps({"inputs": "test", "options": {"wait_for_model": True}}).encode("utf-8")
+
+    last_error = None
+    for endpoint in endpoints:
+        req = _urlrequest.Request(
+            endpoint,
+            data=body,
+            method="POST",
+            headers={
+                "Authorization": f"Bearer {hf_token}",
+                "Content-Type": "application/json",
+            },
+        )
+
+        try:
+            with _urlrequest.urlopen(req, timeout=timeout) as res:
+                payload = _json.loads(res.read().decode("utf-8"))
+
+            if isinstance(payload, dict) and payload.get("error"):
+                last_error = payload.get("error")
+                continue
+
+            return {"status": "ok", "endpoint": endpoint}
+
+        except _urlerror.HTTPError as e:
+            last_error = f"HTTP {e.code} via {endpoint}"
+        except _urlerror.URLError as e:
+            last_error = f"Network error via {endpoint}: {getattr(e, 'reason', str(e))}"
+        except Exception as e:
+            last_error = str(e)
+
+    return {"status": "unavailable", "reason": "all endpoints failed", "detail": last_error}
 
 
 @app.get("/")

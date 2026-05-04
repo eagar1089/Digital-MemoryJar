@@ -10,18 +10,34 @@ import { Plus, Sparkles, TrendingUp } from "lucide-react"
 
 const moodEmojis: Record<string, string> = {
   happy: "😊",
+  joy: "😁",
   calm: "🌿",
   reflective: "🤔",
   peaceful: "🌙",
   excited: "🎉",
   grateful: "🙏",
-  neutral: "📝",
-  joy: "😊",
-  sadness: "📝",
-  anger: "📝",
-  fear: "📝",
-  surprise: "🎉",
-  disgust: "📝",
+  neutral: "😐",
+  sadness: "😔",
+  anger: "😠",
+  fear: "😨",
+  surprise: "😮",
+  disgust: "🤢",
+}
+
+const moodLabels: Record<string, string> = {
+  happy: "Happy",
+  joy: "Joy",
+  calm: "Calm",
+  reflective: "Reflective",
+  peaceful: "Peaceful",
+  excited: "Excited",
+  grateful: "Grateful",
+  neutral: "Neutral",
+  sadness: "Sadness",
+  anger: "Anger",
+  fear: "Fear",
+  surprise: "Surprise",
+  disgust: "Disgust",
 }
 
 type SongPick = { title: string; artist: string; query: string }
@@ -135,6 +151,8 @@ export default function HomePage() {
 
   const latestMood = memories[0]?.mood || stats?.most_common_mood || "neutral"
   const normalizedMood = latestMood.toLowerCase()
+  const moodEmoji = moodEmojis[normalizedMood] || moodEmojis.neutral
+  const moodLabel = moodLabels[normalizedMood] || latestMood
   const recentMemories = memories.slice(0, 2)
   const latestMemory = memories[0]
 
@@ -251,7 +269,7 @@ export default function HomePage() {
                   <p className="text-sm md:text-base font-medium">AI Insight</p>
                   <p className="text-xs md:text-sm text-muted-foreground mt-1">
                     {stats?.most_common_mood
-                      ? `Most common mood: ${stats.most_common_mood}.`
+                      ? `Most common mood: ${moodEmoji} ${moodLabel}.`
                       : "Add memories to unlock AI insights."}
                   </p>
                 </div>
