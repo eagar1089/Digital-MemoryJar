@@ -22,14 +22,20 @@ jobs:
     - name: Sync to Hugging Face Hub
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        HF_USERNAME: ${{ vars.HF_USERNAME }}
+        HF_SPACE_REPO: ${{ vars.HF_SPACE_REPO }}
       run: |
-        git config --global http.https://huggingface.co/.extraheader "Authorization: Bearer $HF_TOKEN"
+        if [[ -z "$HF_TOKEN" || -z "$HF_USERNAME" || -z "$HF_SPACE_REPO" ]]; then
+          echo "HF_TOKEN secret and HF_USERNAME/HF_SPACE_REPO variables must be configured."
+          exit 1
+        fi
 
-        git clone https://huggingface.co/spaces/$HF_SPACE_REPO temp
+        git clone "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE_REPO}" temp
 
-        rm -rf temp/*
+        git -C temp config user.name "github-actions[bot]"
+        git -C temp config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-        cp -r backend/* temp/
+        rsync -a --delete --exclude='.git/' backend/ temp/
 
         cd temp
         git add .
