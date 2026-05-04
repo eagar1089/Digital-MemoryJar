@@ -22,11 +22,11 @@ jobs:
     - name: Sync to Hugging Face Hub
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        HF_USERNAME: ${{ vars.HF_USERNAME }}
-        HF_SPACE_REPO: ${{ vars.HF_SPACE_REPO }}
+        HF_USERNAME: ${{ secrets.HF_USERNAME }}
+        HF_SPACE_REPO: ${{ secrets.HF_SPACE_REPO }}
       run: |
         if [[ -z "$HF_TOKEN" || -z "$HF_USERNAME" || -z "$HF_SPACE_REPO" ]]; then
-          echo "HF_TOKEN secret and HF_USERNAME/HF_SPACE_REPO variables must be configured."
+          echo "HF_TOKEN, HF_USERNAME, and HF_SPACE_REPO secrets must be configured."
           exit 1
         fi
 
