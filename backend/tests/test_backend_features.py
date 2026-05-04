@@ -78,15 +78,16 @@ def test_to_track_parses_spotify_search_item():
 
 def test_weekly_reflection_summarizes_entries(monkeypatch):
     now = datetime.utcnow()
+    week_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
     memories = [
         {
-            "created_at": (now - timedelta(days=1)).isoformat(),
+            "created_at": (week_start + timedelta(days=1)).isoformat(),
             "mood": "happy",
             "tags": ["work"],
             "nlp_insights": {"topics": ["Learning & Growth"]},
         },
         {
-            "created_at": (now - timedelta(days=2)).isoformat(),
+            "created_at": (week_start + timedelta(days=2)).isoformat(),
             "mood": "happy",
             "tags": ["focus"],
             "nlp_insights": {"topics": ["Health & Wellness"]},
