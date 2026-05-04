@@ -37,12 +37,15 @@ jobs:
 
         rsync -a --delete --exclude='.git/' backend/ temp/
 
-        # Ensure Space repo has the repository-level Dockerfile (and Procfile if present)
+        # Ensure Space repo has the repository-level config files
         if [ -f Dockerfile ]; then
           cp Dockerfile temp/
         fi
         if [ -f Procfile ]; then
           cp Procfile temp/
+        fi
+        if [ -f README.md ]; then
+          cp README.md temp/
         fi
 
         cd temp
