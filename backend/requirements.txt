@@ -11,7 +11,7 @@ wrapt==2.1.1
 
 # NLP & AI Processing
 transformers==4.36.2
-torch==2.1.2
+torch==2.2.2
 sentence-transformers==2.2.2
 spacy==3.7.2
 nltk==3.8.1

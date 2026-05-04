@@ -68,7 +68,7 @@ export default function LoginPage() {
 
         <div className="glass rounded-2xl p-8 space-y-6">
           <div className="flex justify-center mb-4">
-            <Image src="/logo.png" alt="Digital Memory Jar Logo" width={80} height={80} />
+            <Image src="/logo.png" alt="Digital Memory Jar Logo" width={140} height={140} className="w-32 h-32 md:w-36 md:h-36" />
           </div>
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-gradient-brand">Welcome Back</h1>

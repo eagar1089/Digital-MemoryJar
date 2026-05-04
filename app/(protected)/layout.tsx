@@ -8,6 +8,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { LogOut } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import ModelHealthMonitor from "@/components/model-health-monitor"
 
 export default function ProtectedLayout({
   children,
@@ -45,6 +46,7 @@ export default function ProtectedLayout({
 
   return (
     <>
+      <ModelHealthMonitor />
       <header className="fixed top-4 left-4 right-4 z-40">
         <div className="max-w-6xl mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center">
@@ -52,7 +54,7 @@ export default function ProtectedLayout({
               href="/home"
               className="px-3 py-2 rounded-md"
             >
-              <Image src="/logo.png" alt="Digital Memory Jar Logo" width={40} height={40} className="h-10 w-10" />
+                <Image src="/logo.png" alt="Digital Memory Jar Logo" width={56} height={56} className="h-14 w-14 md:h-16 md:w-16" />
             </Link>
           </div>
 
