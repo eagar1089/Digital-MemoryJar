@@ -12,6 +12,12 @@ import { useAuth } from "@/lib/auth-context"
 import { auth } from "@/lib/firebase"
 import { signOut } from "firebase/auth"
 
+function getStoredBoolean(key: string, fallback: boolean) {
+  if (typeof window === "undefined") return fallback
+  const stored = window.localStorage.getItem(key)
+  return stored === null ? fallback : stored === "true"
+}
+
 export default function ProfilePage() {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
@@ -23,7 +29,7 @@ export default function ProfilePage() {
   const [email, setEmail] = useState("-")
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
-  const [showProfileCard, setShowProfileCard] = useState(true)
+  const [showProfileCard, setShowProfileCard] = useState(() => getStoredBoolean("showProfileCard", true))
   const [isExporting, setIsExporting] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
 
@@ -47,11 +53,6 @@ export default function ProfilePage() {
     }
 
     loadData()
-
-    const stored = localStorage.getItem("showProfileCard")
-    if (stored === "false") {
-      setShowProfileCard(false)
-    }
 
     return () => {
       mounted = false
