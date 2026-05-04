@@ -1,0 +1,24 @@
+name: Keep Hugging Face Space Alive
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Hugging Face Space - To keep Space alive
+        
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HHF_F_SPACE_URL: ${{ secrets.HF_SPACE_URL }}
+
+        run: |
+          if [[ -z "$HF_TOKEN" || -z "$HF_SPACE_URL" || -z "$HF_SPACE_REPO" ]]; then
+            echo "HF_TOKEN, HF_SPACE_URL secrets must be configured."
+            exit 1
+          fi
+
+          curl -I -s -o /dev/null -w "Health check to %{url_effective} returned status %{http_code}\n" \
+          "${{ secrets.HF_SPACE_URL }}"

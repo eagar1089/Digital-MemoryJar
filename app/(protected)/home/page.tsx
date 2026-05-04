@@ -144,10 +144,15 @@ export default function HomePage() {
     }
   }, [])
 
+  const weekStartTime = useMemo(() => {
+    const weekStart = new Date()
+    weekStart.setDate(weekStart.getDate() - 7)
+    return weekStart.getTime()
+  }, [])
+
   const thisWeekCount = useMemo(() => {
-    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
-    return memories.filter((memory) => new Date(memory.created_at).getTime() >= weekAgo).length
-  }, [memories])
+    return memories.filter((memory) => new Date(memory.created_at).getTime() >= weekStartTime).length
+  }, [memories, weekStartTime])
 
   const latestMood = memories[0]?.mood || stats?.most_common_mood || "neutral"
   const normalizedMood = latestMood.toLowerCase()
@@ -192,7 +197,7 @@ export default function HomePage() {
       <div className="relative z-10 max-w-md md:max-w-4xl mx-auto px-4 md:px-8 py-8 md:py-12 space-y-6 md:space-y-8">
         <div className="space-y-2">
           <h1 className="text-3xl md:text-5xl font-bold text-balance">Good Evening, {userName}</h1>
-          <p className="text-muted-foreground md:text-lg">Let's capture your thoughts today</p>
+          <p className="text-muted-foreground md:text-lg">Let&apos;s capture your thoughts today</p>
         </div>
 
         <CalendarCard memories={memories} />
