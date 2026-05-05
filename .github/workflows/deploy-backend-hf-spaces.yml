@@ -3,7 +3,11 @@ name: Deploy Backend to Hugging Face Space
 on:
   push:
     branches: [ "main" ]
-    paths: [ "backend/**" ]
+    paths:
+      - "backend/**"
+      - "Dockerfile"
+      - "Procfile"
+      - "hf-space/**"
 
   workflow_dispatch:
 
@@ -37,15 +41,16 @@ jobs:
 
         rsync -a --delete --exclude='.git/' backend/ temp/
 
-        # Ensure Space repo has the repository-level config files
+        # Ensure Space repo has the repository-level Dockerfile, HF README metadata,
+        # and Procfile if present.
+        if [ -f hf-space/README.md ]; then
+          cp hf-space/README.md temp/README.md
+        fi
         if [ -f Dockerfile ]; then
           cp Dockerfile temp/
         fi
         if [ -f Procfile ]; then
           cp Procfile temp/
-        fi
-        if [ -f README.md ]; then
-          cp README.md temp/
         fi
 
         cd temp

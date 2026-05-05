@@ -1,13 +1,3 @@
----
-title: Digital Memory Jar
-emoji: 📔
-colorFrom: 1e3a2c
-colorTo: 0f1e2e
-sdk: docker
-sdk_version: latest
-pinned: false
----
-
 # Digital Memory Jar
 
 Digital Memory Jar is an AI-powered journaling app that turns memories into insights with emotion analysis, mood-aware recommendations, and a clean glassmorphic interface.
