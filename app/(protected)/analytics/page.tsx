@@ -7,16 +7,19 @@ import { api, type Memory, type StatsResponse } from "@/lib/api-client"
 type MoodDistributionItem = { name: string; value: number; emoji: string }
 
 const moodEmojis: Record<string, string> = {
-  joy: "😊",
   happy: "😊",
   calm: "🌿",
   reflective: "🤔",
   peaceful: "🌙",
-  sadness: "😔",
-  anger: "😠",
-  fear: "😨",
-  surprise: "😮",
-  disgust: "😖",
+  excited: "🎉",
+  grateful: "🙏",
+  neutral: "📝",
+  joy: "😊",
+  sadness: "📝",
+  anger: "📝",
+  fear: "📝",
+  surprise: "🎉",
+  disgust: "📝",
 }
 
 export default function DashboardPage() {
@@ -135,22 +138,19 @@ export default function DashboardPage() {
 
   const moodData = isMonthlyView ? monthlyMoodData : weeklyMoodData
 
-  const insights = useMemo(() => {
-    const items: string[] = []
-    if (stats?.most_common_mood) {
-      items.push(`Most common mood: ${stats.most_common_mood}.`)
-    }
-    if (stats?.top_topics && stats.top_topics.length > 0) {
-      items.push(`Top topics: ${stats.top_topics.slice(0, 3).join(", ")}.`)
-    }
-    if (memories.length > 0) {
-      items.push(`You have logged ${memories.length} recent memories.`)
-    }
-    if (items.length === 0) {
-      items.push("Add more memories to unlock analytics insights.")
-    }
-    return items
-  }, [stats?.most_common_mood, stats?.top_topics, memories.length])
+  const insights: string[] = []
+  if (stats?.most_common_mood) {
+    insights.push(`Most common mood: ${stats.most_common_mood}.`)
+  }
+  if (stats?.top_topics && stats.top_topics.length > 0) {
+    insights.push(`Top topics: ${stats.top_topics.slice(0, 3).join(", ")}.`)
+  }
+  if (memories.length > 0) {
+    insights.push(`You have logged ${memories.length} recent memories.`)
+  }
+  if (insights.length === 0) {
+    insights.push("Add more memories to unlock analytics insights.")
+  }
 
   return (
     <main className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 pb-24">

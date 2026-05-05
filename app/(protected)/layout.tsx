@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation"
 import { onAuthStateChanged, signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import Link from "next/link"
+import Image from "next/image"
 import { LogOut } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import ModelHealthMonitor from "@/components/model-health-monitor"
 
 export default function ProtectedLayout({
   children,
@@ -44,14 +46,15 @@ export default function ProtectedLayout({
 
   return (
     <>
+      <ModelHealthMonitor />
       <header className="fixed top-4 left-4 right-4 z-40">
         <div className="max-w-6xl mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center">
             <Link
               href="/home"
-              className="text-2xl font-bold text-gradient-brand px-3 py-2 rounded-md"
+              className="px-3 py-2 rounded-md"
             >
-              DMJ
+                <Image src="/logo.png" alt="Digital Memory Jar Logo" width={56} height={56} className="h-14 w-14 md:h-16 md:w-16" />
             </Link>
           </div>
 

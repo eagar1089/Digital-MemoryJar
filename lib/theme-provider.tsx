@@ -13,20 +13,12 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("auto")
-  const [mounted, setMounted] = useState(false)
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "auto"
+    return (window.localStorage.getItem("theme") as Theme | null) || "auto"
+  })
 
   useEffect(() => {
-    setMounted(true)
-    const stored = localStorage.getItem("theme") as Theme | null
-    if (stored) {
-      setThemeState(stored)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!mounted) return
-
     const root = document.documentElement
     let effectiveTheme = theme
 
@@ -41,7 +33,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
 
     localStorage.setItem("theme", theme)
-  }, [theme, mounted])
+  }, [theme])
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme)

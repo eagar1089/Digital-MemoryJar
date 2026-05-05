@@ -1,58 +1,129 @@
-# Digital Memory Jar – AI-Powered Personal Life Logger
+# Digital Memory Jar
 
-## Overview
-**Digital Memory Jar** is a modern AI-powered journaling platform designed to help users record their daily thoughts, emotions, and reflections with ease.  
-It transforms traditional journaling into a smart digital experience using **Natural Language Processing (NLP)** and **Sentiment Analysis** to provide meaningful insights, summaries, and mood tracking.  
+Digital Memory Jar is an AI-powered journaling app that turns memories into insights with emotion analysis, mood-aware recommendations, and a clean glassmorphic interface.
 
-The project focuses on mental well-being and self-reflection by allowing users to log entries, visualize emotional trends, and access their personal growth history in a private and intelligent way.
+## Documentation
 
----
+GitHub shows only this root README on the repository page, so the backend docs are linked here for quick access.
 
-## Key Features
-- **Smart Journaling**: Add daily entries through text or voice.
-- **AI-Powered Summaries**: Automatically generate short summaries using NLP.
-- **Mood Detection**: Analyze emotional tone using sentiment analysis.
-- **Visual Dashboard**: View trends, mood charts, and timelines.
-- **Secure Cloud Storage**: Data stored safely using Firebase or MongoDB Atlas.
-- **Progressive Web App (PWA)**: Optimized for mobile and desktop.
-- **User Authentication**: Google or email sign-in with Firebase Authentication.
-- **Modern UI**: Calm, minimal, and glassmorphic design inspired by Gemini-style aesthetics.
+- [Backend README](backend/README.md) - setup, API endpoints, and NLP pipeline details
+- [UI Screenshots](#screenshots) - actual app views from the repo assets
+- [Figures](#key-figures) - architecture, flow, and design diagrams
 
----
+## At a Glance
 
-## Tech Stack
+- Frontend: Next.js 14, React, TypeScript, Tailwind CSS
+- Backend: FastAPI, Python, APScheduler
+- Data: MongoDB Atlas
+- AI: Hugging Face, multilingual NLP, Spotify suggestions
+
+## What It Does
+
+- Lets users write memories with text or voice
+- Analyzes mood, keywords, topics, entities, and summaries
+- Shows trends in dashboard and timeline views
+- Supports AI companion chat grounded in past entries
+- Suggests music based on emotional context
+- Works as a PWA with offline support
+
+## Screenshots
+
+<details>
+<summary><b>Open UI Screenshots</b></summary>
+
+| Main Dashboard | Add Memory |
+| --- | --- |
+| <img src="DMj-Figures/Screenshots/MainDashboard.jpg" alt="Main Dashboard" width="100%" /> | <img src="DMj-Figures/Screenshots/AddMemory.jpg" alt="Add Memory" width="100%" /> |
+
+| Analytics | Timeline |
+| --- | --- |
+| <img src="DMj-Figures/Screenshots/Analytics.jpg" alt="Analytics" width="100%" /> | <img src="DMj-Figures/Screenshots/Timeline.jpg" alt="Timeline" width="100%" /> |
+
+| Settings |
+| --- |
+| <img src="DMj-Figures/Screenshots/Settings.jpg" alt="Settings" width="100%" /> |
+
+</details>
+
+## Key Figures
+
+<details>
+<summary><b>Open Architecture Figures</b></summary>
+
+| Architecture | Deployment |
+| --- | --- |
+| <img src="DMj-Figures/DiagramsAndFigures/AcrchitectureDiagram.png" alt="Architecture Diagram" width="100%" /> | <img src="DMj-Figures/DiagramsAndFigures/DeploymentDiagram.png" alt="Deployment Diagram" width="100%" /> |
+
+| Use Case | Data Flow |
+| --- | --- |
+| <img src="DMj-Figures/DiagramsAndFigures/UseCase.png" alt="Use Case Diagram" width="100%" /> | <img src="DMj-Figures/DiagramsAndFigures/DFD-Lvl0.png" alt="DFD Level 0" width="100%" /> |
+
+| Class Diagram | Sequence Diagram |
+| --- | --- |
+| <img src="DMj-Figures/DiagramsAndFigures/ClassDiagram1.png" alt="Class Diagram" width="100%" /> | <img src="DMj-Figures/DiagramsAndFigures/SequenceDiagram-MemProcessing.png" alt="Sequence Diagram" width="100%" /> |
+
+</details>
+
+## Setup
 
 ### Frontend
-- **Framework**: React / Next.js  
-- **Styling**: Tailwind CSS  
-- **PWA Support**: Service Workers and Manifest configuration  
+```bash
+npm install
+npm run dev
+```
 
 ### Backend
-- **API Framework**: Python (FastAPI or Flask)  
-- **NLP & AI Models**: Hugging Face Transformers (BART, DistilBERT)  
-- **Sentiment Analysis**: VADER or Transformer-based Emotion Model  
-
-### Database & Cloud
-- **Firebase Firestore** or **MongoDB Atlas**  
-- **Authentication**: Firebase Auth  
-- **Deployment**: Vercel (Frontend) & Render (Backend)
-
----
-
-## System Architecture
-The system follows a **client-server architecture**:
-1. **Frontend (React/Next.js)** – user interactions and dashboard visualization.  
-2. **Backend (FastAPI/Flask)** – handles AI processing, summaries, and sentiment detection.  
-3. **Database (Firestore/MongoDB)** – stores user entries, moods, and summaries securely.  
-
-Data Flow:  
-User Entry → Backend API → NLP Processing → Summary + Sentiment → Database → Dashboard Visualization
-
----
-
-## Setup Instructions
-
-### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/digital-memory-jar.git
-cd digital-memory-jar
+cd backend
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+
+For full backend details, see [backend/README.md](backend/README.md).
+
+## Environment Variables
+
+<details>
+<summary><b>Frontend</b></summary>
+
+- `NEXT_PUBLIC_API_URL` - Backend API URL
+
+</details>
+
+<details>
+<summary><b>Backend</b></summary>
+
+- `MONGO_URI` - MongoDB connection string
+- `HF_API_TOKEN` - Hugging Face API token
+- `SPOTIFY_CLIENT_ID` - Spotify app client ID
+- `SPOTIFY_CLIENT_SECRET` - Spotify app client secret
+
+</details>
+
+## Deployment
+
+- Frontend: Vercel
+- Backend: Hugging Face Spaces
+- Database: MongoDB Atlas
+- Monitoring: Prometheus + Grafana via Docker Compose
+
+## Monitoring
+
+Run the local observability stack with:
+
+```bash
+docker compose up --build
+```
+
+- Backend metrics: `http://localhost:8000/metrics`
+- Prometheus: `http://localhost:9090`
+- Grafana: `http://localhost:3001` with `admin` / `admin`
+
+The backend exports request latency, request counts, and NLP job metrics for Grafana dashboards.
+
+## Notes
+
+- The repo already includes the screenshots and figures under `DMj-Figures/`.
+- If you add new images later, keep them in the same folder so the README stays consistent.

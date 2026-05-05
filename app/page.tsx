@@ -19,9 +19,9 @@ export default function LandingPage() {
             <Image
               src="/logo.png"
               alt="Digital Memory Jar Logo"
-              width={120}
-              height={120}
-              className="drop-shadow-lg w-24 h-24 md:w-40 md:h-40"
+              width={160}
+              height={160}
+              className="drop-shadow-lg w-32 h-32 md:w-48 md:h-48"
             />
           </div>
           <h1 className="text-4xl md:text-6xl font-bold text-balance text-gradient-brand">Digital Memory Jar</h1>

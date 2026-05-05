@@ -9,16 +9,35 @@ import { api, type Memory, type StatsResponse } from "@/lib/api-client"
 import { Plus, Sparkles, TrendingUp } from "lucide-react"
 
 const moodEmojis: Record<string, string> = {
-  calm: "🌿",
   happy: "😊",
+  joy: "😁",
+  calm: "🌿",
   reflective: "🤔",
   peaceful: "🌙",
+  excited: "🎉",
+  grateful: "🙏",
+  neutral: "😐",
   sadness: "😔",
   anger: "😠",
-  fear: "😟",
+  fear: "😨",
   surprise: "😮",
   disgust: "🤢",
-  neutral: "📝",
+}
+
+const moodLabels: Record<string, string> = {
+  happy: "Happy",
+  joy: "Joy",
+  calm: "Calm",
+  reflective: "Reflective",
+  peaceful: "Peaceful",
+  excited: "Excited",
+  grateful: "Grateful",
+  neutral: "Neutral",
+  sadness: "Sadness",
+  anger: "Anger",
+  fear: "Fear",
+  surprise: "Surprise",
+  disgust: "Disgust",
 }
 
 type SongPick = { title: string; artist: string; query: string }
@@ -125,13 +144,20 @@ export default function HomePage() {
     }
   }, [])
 
+  const weekStartTime = useMemo(() => {
+    const weekStart = new Date()
+    weekStart.setDate(weekStart.getDate() - 7)
+    return weekStart.getTime()
+  }, [])
+
   const thisWeekCount = useMemo(() => {
-    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
-    return memories.filter((memory) => new Date(memory.created_at).getTime() >= weekAgo).length
-  }, [memories])
+    return memories.filter((memory) => new Date(memory.created_at).getTime() >= weekStartTime).length
+  }, [memories, weekStartTime])
 
   const latestMood = memories[0]?.mood || stats?.most_common_mood || "neutral"
   const normalizedMood = latestMood.toLowerCase()
+  const moodEmoji = moodEmojis[normalizedMood] || moodEmojis.neutral
+  const moodLabel = moodLabels[normalizedMood] || latestMood
   const recentMemories = memories.slice(0, 2)
   const latestMemory = memories[0]
 
@@ -171,10 +197,10 @@ export default function HomePage() {
       <div className="relative z-10 max-w-md md:max-w-4xl mx-auto px-4 md:px-8 py-8 md:py-12 space-y-6 md:space-y-8">
         <div className="space-y-2">
           <h1 className="text-3xl md:text-5xl font-bold text-balance">Good Evening, {userName}</h1>
-          <p className="text-muted-foreground md:text-lg">Let's capture your thoughts today</p>
+          <p className="text-muted-foreground md:text-lg">Let&apos;s capture your thoughts today</p>
         </div>
 
-        <CalendarCard />
+        <CalendarCard memories={memories} />
 
         {error && (
           <Card className="glass border-destructive/30 p-4">
@@ -248,7 +274,7 @@ export default function HomePage() {
                   <p className="text-sm md:text-base font-medium">AI Insight</p>
                   <p className="text-xs md:text-sm text-muted-foreground mt-1">
                     {stats?.most_common_mood
-                      ? `Most common mood: ${stats.most_common_mood}.`
+                      ? `Most common mood: ${moodEmoji} ${moodLabel}.`
                       : "Add memories to unlock AI insights."}
                   </p>
                 </div>

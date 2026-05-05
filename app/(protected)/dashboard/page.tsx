@@ -61,10 +61,15 @@ export default function DashboardPage() {
     }
   }, [])
 
+  const weekStartTime = useMemo(() => {
+    const weekStart = new Date()
+    weekStart.setDate(weekStart.getDate() - 7)
+    return weekStart.getTime()
+  }, [])
+
   const thisWeekCount = useMemo(() => {
-    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
-    return memories.filter((memory) => new Date(memory.created_at).getTime() >= weekAgo).length
-  }, [memories])
+    return memories.filter((memory) => new Date(memory.created_at).getTime() >= weekStartTime).length
+  }, [memories, weekStartTime])
 
   const moodDistribution = useMemo(() => {
     const total = memories.length || 1

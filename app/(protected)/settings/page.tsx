@@ -18,40 +18,27 @@ import {
   showWarningAlert,
 } from "@/lib/glass-alert"
 
+function getStoredBoolean(key: string, fallback: boolean) {
+  if (typeof window === "undefined") return fallback
+  const stored = window.localStorage.getItem(key)
+  return stored === null ? fallback : stored === "true"
+}
+
 export default function SettingsPage() {
   const router = useRouter()
   const { user } = useAuth()
   const { theme, setTheme } = useTheme()
 
-  const [notifications, setNotifications] = useState(true)
-  const [aiSummary, setAiSummary] = useState(true)
-  const [dataBackup, setDataBackup] = useState(true)
-  const [showProfileCard, setShowProfileCard] = useState(true)
+  const [notifications, setNotifications] = useState(() => getStoredBoolean("dmj.notifications", true))
+  const [aiSummary, setAiSummary] = useState(() => getStoredBoolean("dmj.aiSummary", true))
+  const [dataBackup, setDataBackup] = useState(() => getStoredBoolean("dmj.dataBackup", true))
+  const [showProfileCard, setShowProfileCard] = useState(() => getStoredBoolean("showProfileCard", true))
   const [actionError, setActionError] = useState("")
   const [actionSuccess, setActionSuccess] = useState("")
   const [isExporting, setIsExporting] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
 
   useEffect(() => {
-    const notificationsStored = localStorage.getItem("dmj.notifications")
-    if (notificationsStored !== null) {
-      setNotifications(notificationsStored === "true")
-    }
-
-    const aiSummaryStored = localStorage.getItem("dmj.aiSummary")
-    if (aiSummaryStored !== null) {
-      setAiSummary(aiSummaryStored === "true")
-    }
-
-    const dataBackupStored = localStorage.getItem("dmj.dataBackup")
-    if (dataBackupStored !== null) {
-      setDataBackup(dataBackupStored === "true")
-    }
-
-    const stored = localStorage.getItem("showProfileCard")
-    if (stored === "false") {
-      setShowProfileCard(false)
-    }
   }, [])
 
   useEffect(() => {

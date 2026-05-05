@@ -320,4 +320,8 @@ export const api = {
   async companionChat(question: string): Promise<CompanionChatResponse> {
     return apiPost("/ai/companion-chat", { question });
   },
+
+  async getModelHealth(): Promise<{ status: string; [key: string]: any }> {
+    return apiGet("/ai/model-health");
+  },
 };

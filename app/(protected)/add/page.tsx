@@ -9,6 +9,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Sparkles, Mic, X, AlertCircle } from "lucide-react"
 import { api, apiPost } from "@/lib/api-client"
 
+function getStoredBoolean(key: string, fallback: boolean) {
+  if (typeof window === "undefined") return fallback
+  const stored = window.localStorage.getItem(key)
+  return stored === null ? fallback : stored === "true"
+}
+
 export default function AddMemoryPage() {
   const router = useRouter()
   const [memory, setMemory] = useState("")
@@ -20,7 +26,7 @@ export default function AddMemoryPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [usedVoiceInput, setUsedVoiceInput] = useState(false)
-  const [aiSummaryEnabled, setAiSummaryEnabled] = useState(true)
+  const [aiSummaryEnabled, setAiSummaryEnabled] = useState(() => getStoredBoolean("dmj.aiSummary", true))
   const [aiSummary, setAiSummary] = useState("")
   const [detectedMood, setDetectedMood] = useState("")
   const [detectedTags, setDetectedTags] = useState<string[]>([])
@@ -28,11 +34,6 @@ export default function AddMemoryPage() {
   const [successMessage, setSuccessMessage] = useState("")
 
   useEffect(() => {
-    const storedAiSummary = localStorage.getItem("dmj.aiSummary")
-    if (storedAiSummary !== null) {
-      setAiSummaryEnabled(storedAiSummary === "true")
-    }
-
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.stop()
@@ -105,7 +106,7 @@ export default function AddMemoryPage() {
         }
       }
 
-      setSuccessMessage("Memory saved! It's being processed by the AI pipeline...")
+      setSuccessMessage("Memory saved! It&apos;s being processed by the AI pipeline...")
       
       // Reset form
       setTimeout(() => {
@@ -242,16 +243,19 @@ export default function AddMemoryPage() {
   }
 
   const moodEmojis: Record<string, string> = {
-    reflective: "🤔",
     happy: "😊",
     calm: "🌿",
+    reflective: "🤔",
     peaceful: "🌙",
+    excited: "🎉",
+    grateful: "🙏",
     neutral: "📝",
-    sadness: "😔",
-    anger: "😠",
-    fear: "😟",
-    surprise: "😮",
-    disgust: "🤢",
+    joy: "😊",
+    sadness: "📝",
+    anger: "📝",
+    fear: "📝",
+    surprise: "🎉",
+    disgust: "📝",
   }
 
   return (
@@ -294,7 +298,7 @@ export default function AddMemoryPage() {
         {/* Memory input */}
         <Card className="glass-gradient-primary border-0 p-6 space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">What's on your mind?</label>
+            <label className="text-sm font-medium">What&apos;s on your mind?</label>
             <Textarea
               placeholder="Write your thoughts, feelings, or experiences here..."
               value={memory}

@@ -1,0 +1,65 @@
+name: Deploy Backend to Hugging Face Space
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "backend/**"
+      - "Dockerfile"
+      - "Procfile"
+      - "hf-space/**"
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        lfs: true
+
+    - name: Sync to Hugging Face Hub
+      env:
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        HF_USERNAME: ${{ secrets.HF_USERNAME }}
+        HF_SPACE_REPO: ${{ secrets.HF_SPACE_REPO }}
+      run: |
+        if [[ -z "$HF_TOKEN" || -z "$HF_USERNAME" || -z "$HF_SPACE_REPO" ]]; then
+          echo "HF_TOKEN, HF_USERNAME, and HF_SPACE_REPO secrets must be configured."
+          exit 1
+        fi
+
+        git clone "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE_REPO}" temp
+
+        git -C temp config user.name "github-actions[bot]"
+        git -C temp config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+        rsync -a --delete \
+          --exclude='.git/' \
+          --exclude='.env' \
+          --exclude='venv/' \
+          --exclude='__pycache__/' \
+          --exclude='.pytest_cache/' \
+          backend/ temp/
+
+        # Ensure Space repo has the repository-level Dockerfile, HF README metadata,
+        # and Procfile if present.
+        if [ -f hf-space/README.md ]; then
+          cp hf-space/README.md temp/README.md
+        fi
+        if [ -f Dockerfile ]; then
+          cp Dockerfile temp/
+        fi
+        if [ -f Procfile ]; then
+          cp Procfile temp/
+        fi
+
+        cd temp
+        git add .
+        git diff --quiet && git diff --staged --quiet || git commit -m "Sync backend from GitHub repo on $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+        git push origin main
