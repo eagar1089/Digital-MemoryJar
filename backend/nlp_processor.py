@@ -186,6 +186,8 @@ FALLBACK_EMOTION_KEYWORDS = {
     ],
     "sadness": [
         "sad", "down", "lonely", "empty", "tired", "cry", "hopeless", "upset", "depressed", "hurt",
+        "heavy", "off", "invisible", "burden", "burdened", "drained", "numb", "stuck", "foggy",
+        "weighed", "overwhelmed", "creeping", "isolated", "low",
     ],
     "anger": [
         "angry", "mad", "furious", "annoyed", "frustrated", "irritated", "rage", "hate",
@@ -209,11 +211,22 @@ def _fallback_emotion_scores(text: str) -> Dict[str, float]:
     if not tokens:
         return scores
 
+    token_set = set(tokens)
     for emotion, keywords in FALLBACK_EMOTION_KEYWORDS.items():
         count = 0
         for token in tokens:
             if token in keywords:
                 count += 1
+
+        # Capture a few multi-word feelings that show up often in journal entries.
+        if emotion == "sadness":
+            if "felt" in token_set and "heavy" in token_set:
+                count += 1
+            if "felt" in token_set and "off" in token_set:
+                count += 1
+            if "creeping" in token_set and "back" in token_set:
+                count += 1
+
         if count > 0:
             scores[emotion] = float(count)
 

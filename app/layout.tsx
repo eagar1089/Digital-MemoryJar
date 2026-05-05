@@ -16,6 +16,8 @@ export const metadata: Metadata = {
   title: "Digital Memory Jar",
   description: "AI-powered personal life logger",
   generator: "v0.app",
+  // 
+  // icons are defined in manifest.webmanifest for PWA support, but we can also add them here for better compatibility with various platforms and crawlers
 }
 
 export default function RootLayout({

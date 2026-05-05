@@ -28,6 +28,19 @@ def test_dominant_mood_from_scores_handles_ties_and_aliases():
     assert nlp_processor.dominant_mood_from_scores({"joy": 0.5, "sadness": 0.5}) == "neutral"
 
 
+def test_fallback_emotion_scores_detects_subtle_sadness_language():
+    text = (
+        "I don’t even know why today felt so heavy. Nothing major happened, but everything felt off. "
+        "It’s like carrying something invisible that no one else can see. I tried distracting myself, "
+        "but the feeling kept creeping back. Maybe I just needed to sit with it instead of running."
+    )
+
+    scores = nlp_processor._fallback_emotion_scores(text)
+
+    assert scores["sadness"] > 0
+    assert nlp_processor.dominant_mood_from_scores(scores) == "sadness"
+
+
 def test_generate_embedding_returns_normalized_vector():
     embedding = nlp_processor.generate_embedding("alpha beta gamma")
 

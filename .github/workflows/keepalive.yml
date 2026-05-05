@@ -15,7 +15,7 @@ jobs:
           HHF_F_SPACE_URL: ${{ secrets.HF_SPACE_URL }}
 
         run: |
-          if [[ -z "$HF_TOKEN" || -z "$HF_SPACE_URL" || -z "$HF_SPACE_REPO" ]]; then
+          if [[ -z "$HF_TOKEN" || -z "$HF_SPACE_URL"]]; then
             echo "HF_TOKEN, HF_SPACE_URL secrets must be configured."
             exit 1
           fi
