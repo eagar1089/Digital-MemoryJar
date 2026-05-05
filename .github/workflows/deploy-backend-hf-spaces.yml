@@ -39,7 +39,13 @@ jobs:
         git -C temp config user.name "github-actions[bot]"
         git -C temp config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-        rsync -a --delete --exclude='.git/' backend/ temp/
+        rsync -a --delete \
+          --exclude='.git/' \
+          --exclude='.env' \
+          --exclude='venv/' \
+          --exclude='__pycache__/' \
+          --exclude='.pytest_cache/' \
+          backend/ temp/
 
         # Ensure Space repo has the repository-level Dockerfile, HF README metadata,
         # and Procfile if present.
