@@ -15,11 +15,9 @@ jobs:
           HHF_F_SPACE_URL: ${{ secrets.HF_SPACE_URL }}
 
         run: |
-          if [[ -z "$HF_TOKEN" || -z "$HF_SPACE_URL"]]
-          then
-            echo "HF_TOKEN, HF_SPACE_URL secrets must be configured."
+          if [[ -z "$HF_TOKEN" || -z "$HF_SPACE_URL" ]]; then
+            echo "Missing required environment variables"
             exit 1
           fi
-
           curl -I -s -o /dev/null -w "Health check to %{url_effective} returned status %{http_code}\n" \
           "${{ secrets.HF_SPACE_URL }}"
