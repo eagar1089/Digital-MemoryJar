@@ -12,7 +12,7 @@ jobs:
         
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HHF_F_SPACE_URL: ${{ secrets.HF_SPACE_URL }}
+          HF_SPACE_URL: ${{ secrets.HF_SPACE_URL }}
 
         run: |
           if [[ -z "$HF_TOKEN" || -z "$HF_SPACE_URL" ]]; then
