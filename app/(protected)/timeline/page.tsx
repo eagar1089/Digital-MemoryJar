@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { MemoryCard } from "@/components/memory-card"
 import { Search } from "lucide-react"
 import { api, type Memory } from "@/lib/api-client"
+import { getMoodEmoji } from "@/lib/mood"
 
 export default function TimelinePage() {
   const searchParams = useSearchParams()
@@ -46,17 +47,6 @@ export default function TimelinePage() {
     })
     return ["all", ...Array.from(set)]
   }, [memories])
-
-  const moodEmojis: Record<string, string> = {
-    all: "?",
-    happy: "😊",
-    calm: "🌿",
-    reflective: "🤔",
-    peaceful: "🌙",
-    excited: "🎉",
-    grateful: "🙏",
-    neutral: "📝",
-  }
 
   function toDateKey(input: string | Date): string {
     if (typeof input === "string") {
@@ -150,7 +140,7 @@ export default function TimelinePage() {
                       : "border-primary/30 hover:bg-primary/5 bg-transparent"
                   }`}
                 >
-                  <span className="mr-1">{moodEmojis[mood] || "📝"}</span>
+                  <span className="mr-1">{getMoodEmoji(mood)}</span>
                   {mood.charAt(0).toUpperCase() + mood.slice(1)}
                 </Button>
               ))}

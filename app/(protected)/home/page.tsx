@@ -6,23 +6,8 @@ import CalendarCard from "@/components/ui/calenderCard"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { api, type Memory, type StatsResponse } from "@/lib/api-client"
+import { getMoodEmoji } from "@/lib/mood"
 import { Plus, Sparkles, TrendingUp } from "lucide-react"
-
-const moodEmojis: Record<string, string> = {
-  happy: "😊",
-  joy: "😁",
-  calm: "🌿",
-  reflective: "🤔",
-  peaceful: "🌙",
-  excited: "🎉",
-  grateful: "🙏",
-  neutral: "😐",
-  sadness: "😔",
-  anger: "😠",
-  fear: "😨",
-  surprise: "😮",
-  disgust: "🤢",
-}
 
 const moodLabels: Record<string, string> = {
   happy: "Happy",
@@ -156,7 +141,7 @@ export default function HomePage() {
 
   const latestMood = memories[0]?.mood || stats?.most_common_mood || "neutral"
   const normalizedMood = latestMood.toLowerCase()
-  const moodEmoji = moodEmojis[normalizedMood] || moodEmojis.neutral
+  const moodEmoji = getMoodEmoji(normalizedMood)
   const moodLabel = moodLabels[normalizedMood] || latestMood
   const recentMemories = memories.slice(0, 2)
   const latestMemory = memories[0]
@@ -302,7 +287,7 @@ export default function HomePage() {
                         <p className="text-sm md:text-base font-medium">{new Date(memory.created_at).toLocaleDateString()}</p>
                         <p className="text-xs md:text-sm text-muted-foreground mt-1">{new Date(memory.created_at).toLocaleTimeString()}</p>
                       </div>
-                      <span className="text-lg md:text-2xl">{moodEmojis[memory.mood || "neutral"] || "📝"}</span>
+                      <span className="text-lg md:text-2xl">{getMoodEmoji(memory.mood || "neutral")}</span>
                     </div>
                     <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{memory.ai_summary || memory.content}</p>
                   </Card>

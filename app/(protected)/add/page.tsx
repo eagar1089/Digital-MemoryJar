@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Sparkles, Mic, X, AlertCircle } from "lucide-react"
 import { api, apiPost } from "@/lib/api-client"
+import { getMoodEmoji } from "@/lib/mood"
 
 function getStoredBoolean(key: string, fallback: boolean) {
   if (typeof window === "undefined") return fallback
@@ -242,22 +243,6 @@ export default function AddMemoryPage() {
     setIsRecording(true)
   }
 
-  const moodEmojis: Record<string, string> = {
-    happy: "😊",
-    calm: "🌿",
-    reflective: "🤔",
-    peaceful: "🌙",
-    excited: "🎉",
-    grateful: "🙏",
-    neutral: "📝",
-    joy: "😊",
-    sadness: "📝",
-    anger: "📝",
-    fear: "📝",
-    surprise: "🎉",
-    disgust: "📝",
-  }
-
   return (
     <main className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 pb-24">
       {/* Background gradient orbs */}
@@ -364,7 +349,7 @@ export default function AddMemoryPage() {
             <Card className="glass-gradient-accent border-0 p-4 space-y-3">
               <p className="text-xs font-semibold text-muted-foreground uppercase">Detected Mood</p>
               <div className="flex items-center gap-3">
-                <span className="text-4xl">{moodEmojis[detectedMood]}</span>
+                <span className="text-4xl">{getMoodEmoji(detectedMood)}</span>
                 <div>
                   <p className="font-medium capitalize">{detectedMood}</p>
                   <p className="text-xs text-muted-foreground">Based on your entry</p>

@@ -6,20 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { api, type Memory, type MoodAnomalyResponse, type StatsResponse, type WeeklyReflectionResponse } from "@/lib/api-client"
-
-const moodEmoji: Record<string, string> = {
-  happy: "😊",
-  calm: "🌿",
-  reflective: "🤔",
-  peaceful: "🌙",
-  sadness: "😔",
-  anger: "😠",
-  fear: "😟",
-  surprise: "😮",
-  disgust: "🤢",
-  neutral: "📝",
-}
-
+import { getMoodEmoji } from "@/lib/mood"
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<StatsResponse | null>(null)
@@ -245,7 +232,7 @@ export default function DashboardPage() {
                 <div key={mood.name} className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
                     <span className="flex items-center gap-2 capitalize">
-                      <span>{moodEmoji[mood.name] || "📝"}</span>
+                      <span>{getMoodEmoji(mood.name)}</span>
                       {mood.name}
                     </span>
                     <span className="font-medium">{mood.percentage}%</span>

@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card"
+import { getMoodEmoji } from "@/lib/mood"
 import Link from "next/link"
 
 interface MemoryCardProps {
@@ -7,22 +8,6 @@ interface MemoryCardProps {
   summary: string
   mood: string
   tags: string[]
-}
-
-const moodEmojis: Record<string, string> = {
-  happy: "😊",
-  calm: "🌿",
-  reflective: "🤔",
-  peaceful: "🌙",
-  excited: "🎉",
-  grateful: "🙏",
-  neutral: "📝",
-  joy: "😊",
-  sadness: "📝",
-  anger: "📝",
-  fear: "📝",
-  surprise: "🎉",
-  disgust: "📝",
 }
 
 export function MemoryCard({ id, date, summary, mood, tags }: MemoryCardProps) {
@@ -34,7 +19,7 @@ export function MemoryCard({ id, date, summary, mood, tags }: MemoryCardProps) {
             <p className="text-xs text-muted-foreground">{date}</p>
             <p className="text-sm font-medium mt-1 line-clamp-2">{summary}</p>
           </div>
-          <span className="text-2xl shrink-0">{moodEmojis[mood] || "📝"}</span>
+          <span className="text-2xl shrink-0">{getMoodEmoji(mood)}</span>
         </div>
 
         {tags.length > 0 && (

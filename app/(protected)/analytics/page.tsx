@@ -3,24 +3,9 @@ import { useEffect, useMemo, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { api, type Memory, type StatsResponse } from "@/lib/api-client"
+import { getMoodEmoji } from "@/lib/mood"
 
 type MoodDistributionItem = { name: string; value: number; emoji: string }
-
-const moodEmojis: Record<string, string> = {
-  happy: "😊",
-  calm: "🌿",
-  reflective: "🤔",
-  peaceful: "🌙",
-  excited: "🎉",
-  grateful: "🙏",
-  neutral: "📝",
-  joy: "😊",
-  sadness: "📝",
-  anger: "📝",
-  fear: "📝",
-  surprise: "🎉",
-  disgust: "📝",
-}
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<StatsResponse | null>(null)
@@ -63,7 +48,7 @@ export default function DashboardPage() {
     return entries.map(([name, value]) => ({
       name: name.charAt(0).toUpperCase() + name.slice(1),
       value: Math.round(value * 100),
-      emoji: moodEmojis[name] || "📝",
+      emoji: getMoodEmoji(name),
     }))
   }, [stats?.top_emotions])
 

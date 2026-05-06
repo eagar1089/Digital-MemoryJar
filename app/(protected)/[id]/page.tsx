@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Edit2, Trash2, Share2 } from "lucide-react"
 import { api, type Memory } from "@/lib/api-client"
+import { getMoodEmoji } from "@/lib/mood"
 
 export default function MemoryDetailPage() {
   const params = useParams<{ id: string }>()
@@ -43,22 +44,6 @@ export default function MemoryDetailPage() {
 
     loadMemory()
   }, [memoryId])
-
-  const moodEmojis: Record<string, string> = {
-    happy: "😊",
-    calm: "🌿",
-    reflective: "🤔",
-    peaceful: "🌙",
-    excited: "🎉",
-    grateful: "🙏",
-    neutral: "📝",
-    joy: "😊",
-    sadness: "📝",
-    anger: "📝",
-    fear: "📝",
-    surprise: "🎉",
-    disgust: "📝",
-  }
 
   const aiInsight = useMemo(() => {
     if (!memory?.nlp_insights) {
@@ -227,7 +212,7 @@ export default function MemoryDetailPage() {
                   <p className="text-xs text-muted-foreground">{new Date(memory.created_at).toLocaleDateString()}</p>
                   <h1 className="text-2xl font-bold">Memory Detail</h1>
                 </div>
-                <span className="text-4xl">{moodEmojis[memory.mood || "neutral"] || "📝"}</span>
+                <span className="text-4xl">{getMoodEmoji(memory.mood || "neutral")}</span>
               </div>
 
               {isEditing ? (
