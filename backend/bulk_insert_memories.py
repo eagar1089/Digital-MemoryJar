@@ -18,45 +18,45 @@ import os
 import time
 
 SAMPLE_MEMORIES = [
-    "Today felt lighter than usual. I managed to get through my tasks without overthinking too much. Even small wins felt meaningful. Ending the day on a positive note.",
+    "Today felt surprisingly productive and calm at the same time. I managed to complete most of the tasks I had been putting off, and that gave me a sense of control. There were moments where I almost got distracted, but I pulled myself back. Ending the day with a clear mind feels rewarding.",
 
-    "Woke up feeling a bit off and couldn’t really shake it. Nothing major happened but everything felt heavier. Tried to stay productive anyway. Hoping tomorrow feels better.",
+    "Woke up feeling a bit low and couldn’t really figure out why. Nothing specific went wrong, but everything just felt heavier than usual. I tried to stay busy to distract myself, but the feeling kept coming back. Maybe I just need to sit with it instead of avoiding it.",
 
-    "Spent some quiet time alone today and it actually felt peaceful. No pressure, no rush, just going with the flow. It helped clear my mind. I should do this more often.",
+    "Spent a good amount of time alone today and it didn’t feel lonely at all. I actually enjoyed the quiet and the space to think. It helped me organize my thoughts and slow things down. Days like this remind me how important it is to pause.",
 
-    "There was this constant tension in my thoughts today. I kept worrying about things that haven’t even happened. It made focusing difficult. Need to slow things down.",
+    "There was this constant sense of worry in the background today. Even while doing normal things, my mind kept jumping to future problems. It made it hard to stay present. I really need to work on managing this better.",
 
-    "Something exciting is coming up and I can’t stop thinking about it. I feel energized and motivated. It’s been a while since I felt this kind of spark. Looking forward to what’s next.",
+    "Something exciting is coming up and I can feel the energy building inside me. I kept imagining different possibilities and outcomes. It’s a mix of excitement and nervousness, but mostly positive. I’m actually looking forward to what’s next.",
 
-    "Today was pretty normal, nothing too special. I followed my routine and got things done. It felt stable and manageable. Not every day needs to be extraordinary.",
+    "Today was pretty ordinary, nothing really stood out. I followed my usual routine and got through the day without much effort. It wasn’t bad, just very neutral. Sometimes that kind of stability is actually nice.",
 
-    "I found myself thinking deeply about my future today. Some things are starting to make more sense. It’s still unclear, but I feel like I’m moving in the right direction.",
+    "I found myself thinking deeply about my goals today. Some things that once seemed important don’t feel the same anymore. It’s interesting how perspectives change over time. I think I’m slowly understanding what I truly want.",
 
-    "There were small moments today that made me smile. Nothing big, just simple things. It reminded me that happiness can be quiet. I appreciated that.",
+    "There were a few small moments today that genuinely made me smile. A random conversation, a good song, a quiet break. Nothing major, but it added up. It made me realize happiness doesn’t always have to be big.",
 
-    "A strange heaviness stayed with me throughout the day. I couldn’t really explain it. It wasn’t overwhelming, just present. Maybe I need to reflect more on it.",
+    "The day carried a quiet heaviness that I couldn’t explain. I tried to shake it off by staying busy, but it stayed in the background. It wasn’t overwhelming, just persistent. Maybe I need to understand it instead of ignoring it.",
 
-    "Had a really productive day and it felt satisfying. Finished tasks I had been delaying. Rewarded myself with some downtime. Felt like I earned it.",
+    "Had a really satisfying day where things actually went as planned. Finished my work on time and even had extra time to relax. That doesn’t happen often. It felt good to be in control for once.",
 
-    "Took things slow today and didn’t rush anything. It made a big difference in how I felt. My thoughts were clearer. I felt more in control.",
+    "I decided to slow things down today and not rush into anything. It made a noticeable difference in how I felt. My thoughts were clearer and I wasn’t as stressed. Maybe this is something I should practice regularly.",
 
-    "Deadlines are getting closer and I can feel the pressure building. I keep thinking I’m falling behind. It’s exhausting to stay in this state. Need to reset.",
+    "Deadlines are getting closer and I can feel the pressure increasing. I keep thinking about everything that could go wrong. It’s exhausting to stay in that mindset. I need to take a step back and plan things calmly.",
 
-    "Tried something new today without overthinking it. It turned out better than expected. That felt refreshing. Maybe I should take more chances.",
+    "Tried doing something different today just for the sake of it. I didn’t overthink or hesitate, just went for it. It turned out to be a good experience. I should probably take more risks like this.",
 
-    "Just another routine day, nothing stood out much. Still, I stayed consistent with my work. That matters in the long run. Small steps count.",
+    "It was just another routine day, nothing particularly exciting happened. Still, I managed to stay consistent with my work. That consistency might not feel exciting now, but it matters in the long run.",
 
-    "Realized how much I’ve changed over time. Things that once bothered me don’t anymore. Growth feels slow but real. That’s comforting.",
+    "I realized today how much I’ve grown over time. Things that once stressed me out don’t affect me the same way anymore. It’s not a huge change, but it’s noticeable. That gives me some confidence.",
 
-    "Spent time doing something I genuinely enjoy. Lost track of time completely. It felt nice to be fully present. I should prioritize this more.",
+    "Spent some time doing something I genuinely enjoy and lost track of time. It felt refreshing to be fully present in that moment. I didn’t think about anything else. I need more of that in my life.",
 
-    "Something small triggered deeper thoughts today. It stayed on my mind longer than expected. I think there’s more to unpack there. I’ll revisit it later.",
+    "Something small triggered a deeper emotional response today. It stayed on my mind longer than expected. I think there are still things I haven’t fully processed. Maybe I should give it more attention.",
 
-    "The day felt balanced and manageable. Nothing too stressful, nothing too exciting. Just steady progress. That’s enough sometimes.",
+    "The day felt balanced overall, not too stressful and not too exciting. Everything was manageable and steady. It’s not the kind of day you remember, but it’s still valuable in its own way.",
 
-    "Connected with someone after a long time today. The conversation felt natural and easy. It lifted my mood instantly. People really matter.",
+    "Connected with someone after a long time and it felt really good. The conversation was easy and natural. It reminded me how important these connections are. It definitely improved my mood.",
 
-    "Spent time reflecting on what truly matters to me. Some priorities are starting to shift. It’s a bit confusing but necessary. I’m figuring things out slowly."
+    "Spent some time reflecting on my priorities and what really matters. I realized that some things I stress about aren’t that important. It’s a bit confusing but also clarifying. I think I’m slowly figuring things out."
 ]
 MOODS = ["happy", "sad", "calm", "anxious", "excited", "neutral", "reflective", "sadness", "joy"]
 

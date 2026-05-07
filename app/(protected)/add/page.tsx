@@ -8,7 +8,11 @@ import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Sparkles, Mic, X, AlertCircle } from "lucide-react"
 import { api, apiPost } from "@/lib/api-client"
+import { showGlassAlert } from "@/lib/glass-alert"
 import { getMoodEmoji } from "@/lib/mood"
+
+const ANALYZE_TIMEOUT_MS = 20000
+const ANALYZE_SLOW_ALERT_MS = 6000
 
 function getStoredBoolean(key: string, fallback: boolean) {
   if (typeof window === "undefined") return fallback
@@ -49,8 +53,24 @@ export default function AddMemoryPage() {
     setIsAnalyzing(true)
     setError("")
 
+    let slowAlertTimer: number | undefined
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      window.setTimeout(() => {
+        reject(new Error("Analysis timed out. Please try again."))
+      }, ANALYZE_TIMEOUT_MS)
+    })
+
+    slowAlertTimer = window.setTimeout(() => {
+      showGlassAlert({
+        title: "Still analyzing",
+        text: "This is taking longer than usual. Please wait a few more seconds.",
+        icon: "info",
+      })
+    }, ANALYZE_SLOW_ALERT_MS)
+
     try {
-      const analysis = await api.analyzeMemory(memory)
+      const analysis = await Promise.race([api.analyzeMemory(memory), timeoutPromise])
       setAiSummary(analysis.ai_summary || "")
       setDetectedMood(analysis.mood || "neutral")
       setDetectedTags(analysis.tags || [])
@@ -58,8 +78,16 @@ export default function AddMemoryPage() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Analyze failed"
       setError(errorMessage)
+      showGlassAlert({
+        title: "Analyze failed",
+        text: "Could not analyze this memory right now. Please try again in a moment.",
+        icon: "warning",
+      })
       console.error("Analyze error:", err)
     } finally {
+      if (slowAlertTimer) {
+        window.clearTimeout(slowAlertTimer)
+      }
       setIsAnalyzing(false)
     }
   }
