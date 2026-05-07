@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { api } from "@/lib/api-client"
-import { showWarningAlert, showErrorAlert } from "@/lib/glass-alert"
 
 export default function ModelHealthMonitor() {
   const [status, setStatus] = useState<string | null>(null)
@@ -16,15 +15,17 @@ export default function ModelHealthMonitor() {
         if (!mounted) return
         setStatus(res.status || "unknown")
 
+        // Do not show modal alerts from this monitor to avoid interrupting the user.
+        // Keep status state updated for any UI that reads it.
         if (res.status === "degraded") {
-          showWarningAlert({ title: "AI degraded", text: "AI inference falling back to local heuristics.", icon: "warning" })
+          console.warn("Model health: degraded — falling back to heuristics")
         } else if (res.status === "unavailable") {
-          showErrorAlert()
+          console.warn("Model health: unavailable")
         }
       } catch (err) {
         if (!mounted) return
         setStatus("error")
-        showErrorAlert()
+        console.error("Model health check failed:", err)
       }
     }
 
