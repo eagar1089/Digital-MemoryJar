@@ -16,9 +16,9 @@ export function ThemeToggle() {
     <Tooltip content={`Switch to ${getNextTheme()} mode`}>
       <button
         onClick={() => setTheme(getNextTheme())}
-        className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all duration-300 hover:scale-110"
+        className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all duration-300 hover:scale-120"
       >
-        {theme === "dark" ? <Moon size={16} /> : <Sun size={16} />}
+        {theme === "dark" ? <Moon size={22} /> : <Sun size={22} />}
       </button>
     </Tooltip>
   )

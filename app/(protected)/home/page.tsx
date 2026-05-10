@@ -174,14 +174,10 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 pb-24 md:pb-8">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 md:top-40 md:left-20 w-72 md:w-96 h-72 md:h-96 bg-primary/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 md:bottom-40 md:right-20 w-72 md:w-96 h-72 md:h-96 bg-accent/10 rounded-full blur-3xl"></div>
-      </div>
 
       <div className="relative z-10 max-w-md md:max-w-4xl mx-auto px-4 md:px-8 py-8 md:py-12 space-y-6 md:space-y-8">
-        <div className="space-y-2">
-          <h1 className="text-3xl md:text-5xl font-bold text-balance">Good Evening, {userName}</h1>
+        <div className="">
+          <h1 className="text-3xl md:text-5xl font-bold text-balance">{userName}</h1>
           <p className="text-muted-foreground md:text-lg">Let&apos;s capture your thoughts today</p>
         </div>
 
