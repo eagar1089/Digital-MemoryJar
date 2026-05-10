@@ -3,9 +3,15 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Home, Plus, Gauge, BarChart3, User } from "lucide-react"
 import { Tooltip } from "./tooltip"
+import { useAuth } from "@/lib/auth-context"
 
 export function FloatingNav() {
   const pathname = usePathname()
+  const { user, loading } = useAuth()
+
+  if (loading || !user) {
+    return null
+  }
 
   const navItems = [
     { href: "/home", icon: Home, label: "Home" },

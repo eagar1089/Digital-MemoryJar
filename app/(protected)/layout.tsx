@@ -69,27 +69,22 @@ export default function ProtectedLayout({
   return (
     <>
       <ModelHealthMonitor />
-      <header className="fixed inset-x-0 top-0 z-50 w-full border-b border-border/60 bg-background/70 shadow-sm backdrop-blur-2xl supports-backdrop-filter:bg-background/60">
-        <nav aria-label="Primary" className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+      <header className="fixed inset-x-0 top-0 z-50 w-full border-b border-border/60 bg-background shadow-lg shadow-slate-900/10 dark:border-border/60 dark:bg-background dark:shadow-black/30">
+      <div
+        role="navigation"
+        aria-label="Primary"
+        className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 rounded-2xl border border-border/50 bg-background px-4 shadow-[0_8px_32px_rgba(15,23,42,0.12)] sm:px-6 lg:px-8 dark:border-border/60 dark:bg-background dark:shadow-[0_8px_32px_rgba(0,0,0,0.28)]"
+      >
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <Link href="/home" className="flex shrink-0 items-center rounded-xl p-1 transition-colors hover:bg-muted/60">
               <Image
                 src="/logo.png"
                 alt="Digital Memory Jar Logo"
-                width={48}
-                height={48}
-                className="h-10 w-10 shrink-0 sm:h-12 sm:w-12"
+                width={150}
+                height={150}
+                className="h-31 w-31 shrink-0"
               />
             </Link>
-
-            <div className="min-w-0">
-              <h1 className="truncate text-2xl font-semibold leading-none tracking-tight text-foreground sm:text-3xl md:text-4xl">
-                {title}
-              </h1>
-              <p className="mt-1 truncate text-xs text-muted-foreground sm:text-sm">
-                {subtitle}
-              </p>
-            </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -100,13 +95,13 @@ export default function ProtectedLayout({
               aria-label="Sign out"
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              <LogOut size={16} />
+              <LogOut size={20} />
             </button>
           </div>
-        </nav>
+      </div>
       </header>
 
-      <div className="pt-24 sm:pt-28">{children}</div>
+      <div className="pt-16">{children}</div>
     </>
   )
 }
